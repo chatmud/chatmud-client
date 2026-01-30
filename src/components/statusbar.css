@@ -30,3 +30,17 @@
 .status-time {
     color: var(--color-text-muted);
 }
+
+.status-attribution {
+    color: var(--color-text-muted);
+    margin-left: auto;
+}
+
+.status-attribution a {
+    color: var(--color-text-muted);
+    text-decoration: underline;
+}
+
+.status-attribution a:hover {
+    color: var(--color-text);
+}

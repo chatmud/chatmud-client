@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "ChatMUD Web Client",
+    "short_name": "ChatMUD",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",

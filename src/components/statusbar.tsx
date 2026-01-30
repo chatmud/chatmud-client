@@ -80,7 +80,9 @@ const Statusbar: React.FC<StatusbarProps> = ({ client }) => {
           {/* Add other vitals here */}
         </span>
       )}
-      {/* Removed time display span */}
+      <span className="status-attribution">
+        Based on the <a href="https://github.com/mongoosemoo/react-client" target="_blank" rel="noopener noreferrer">Project Mongoose Web Client</a>
+      </span>
     </div>
   );
 };
