@@ -1,16 +1,40 @@
 import { GMCPPackage } from "./package";
+import { preferencesStore } from "../PreferencesStore";
 
-
+/**
+ * GMCP Authentication handler
+ * Implements username/password auto-login per GMCP Authentication standard
+ * Uses preferences store for credential management
+ */
 export class GMCPAutoLogin extends GMCPPackage {
-    public packageName: string = "Auth.Autologin";
+    public packageName: string = "Auth";
 
-    handleToken(data: string): void {
-        localStorage.setItem("LoginRefreshToken", data);
-    }
-
+    /**
+     * Attempt auto-login if credentials are stored and enabled
+     * Sends Char.Login with username/password per GMCP standard
+     */
     sendLogin(): void {
-        var token = localStorage.getItem("LoginRefreshToken");
-        if (token)
-            this.sendData("Login", token);
+        const auth = preferencesStore.getState().auth;
+
+        if (!auth.autoLoginEnabled) {
+            console.log("[Auth] Auto-login disabled");
+            return;
+        }
+
+        if (!auth.username || !auth.password) {
+            console.log("[Auth] Auto-login credentials incomplete");
+            return;
+        }
+
+        console.log(`[Auth] Auto-login as: ${auth.username}`);
+
+        // Send Char.Login per GMCP standard
+        this.client.sendGmcp(
+            "Char.Login",
+            JSON.stringify({
+                name: auth.username,
+                password: auth.password
+            })
+        );
     }
 }

@@ -37,6 +37,12 @@ export type MidiPreferences = {
   lastOutputDeviceId?: string;
 };
 
+export type AuthPreferences = {
+  autoLoginEnabled: boolean;
+  username: string;
+  password: string;
+};
+
 export type PrefState = {
   general: GeneralPreferences;
   speech: SpeechPreferences;
@@ -44,6 +50,7 @@ export type PrefState = {
   channels?: { [channelId: string]: ChannelPreferences };
   editor: EditorPreferences;
   midi: MidiPreferences;
+  auth: AuthPreferences;
 };
 
 export enum PrefActionType {
@@ -54,6 +61,7 @@ export enum PrefActionType {
   SetEditorAutocompleteEnabled = "SET_EDITOR_AUTOCOMPLETE_ENABLED",
   SetEditorAccessibilityMode = "SET_EDITOR_ACCESSIBILITY_MODE",
   SetMidi = "SET_MIDI",
+  SetAuth = "SET_AUTH",
 }
 
 export type PrefAction =
@@ -63,18 +71,58 @@ export type PrefAction =
   | { type: PrefActionType.SetChannels; data: { [channelId: string]: ChannelPreferences } }
   | { type: PrefActionType.SetEditorAutocompleteEnabled; data: boolean }
   | { type: PrefActionType.SetEditorAccessibilityMode; data: boolean }
-  | { type: PrefActionType.SetMidi; data: MidiPreferences };
+  | { type: PrefActionType.SetMidi; data: MidiPreferences }
+  | { type: PrefActionType.SetAuth; data: AuthPreferences };
 
 class PreferencesStore {
   private state: PrefState;
   private listeners: Set<() => void> = new Set();
+
+  /**
+   * Encode auth credentials using base64
+   */
+  private encodeAuth(auth: AuthPreferences): AuthPreferences {
+    if (!auth.username && !auth.password) {
+      return auth;
+    }
+
+    try {
+      return {
+        autoLoginEnabled: auth.autoLoginEnabled,
+        username: auth.username ? btoa(auth.username) : "",
+        password: auth.password ? btoa(auth.password) : "",
+      };
+    } catch {
+      return auth; // Return as-is if encoding fails
+    }
+  }
+
+  /**
+   * Decode auth credentials from base64
+   */
+  private decodeAuth(auth: AuthPreferences): AuthPreferences {
+    if (!auth.username && !auth.password) {
+      return auth;
+    }
+
+    try {
+      return {
+        autoLoginEnabled: auth.autoLoginEnabled,
+        username: auth.username ? atob(auth.username) : "",
+        password: auth.password ? atob(auth.password) : "",
+      };
+    } catch {
+      // If decoding fails, assume it's already plain text (for migration)
+      return auth;
+    }
+  }
 
   constructor() {
     // Merge the initial preferences with the stored preferences from localStorage
     const storedData = localStorage.getItem("preferences");
     const initialPreferences = this.getInitialPreferences();
     let parsedData = storedData ? JSON.parse(storedData) : null;
-    
+
     // Migration: move volume from general to sound if it exists
     if (parsedData?.general?.volume !== undefined && parsedData?.sound) {
       if (!parsedData.sound.volume) {
@@ -82,7 +130,12 @@ class PreferencesStore {
       }
       delete parsedData.general.volume;
     }
-    
+
+    // Decode auth credentials if they exist
+    if (parsedData?.auth) {
+      parsedData.auth = this.decodeAuth(parsedData.auth);
+    }
+
     this.state = parsedData ? this.mergePreferences(initialPreferences, parsedData) : initialPreferences;
   }
 
@@ -115,6 +168,11 @@ class PreferencesStore {
       midi: {
         enabled: false,
       },
+      auth: {
+        autoLoginEnabled: false,
+        username: "",
+        password: "",
+      },
     };
   }
 
@@ -128,6 +186,7 @@ class PreferencesStore {
       channels: stored.channels ? { ...initial.channels, ...stored.channels } : initial.channels,
       editor: { ...initial.editor, ...stored.editor },
       midi: { ...initial.midi, ...stored.midi },
+      auth: { ...initial.auth, ...stored.auth },
     };
   }
 
@@ -147,6 +206,8 @@ class PreferencesStore {
         return { ...state, editor: { ...state.editor, accessibilityMode: action.data } };
       case PrefActionType.SetMidi:
         return { ...state, midi: action.data };
+      case PrefActionType.SetAuth:
+        return { ...state, auth: action.data };
       default:
         return state;
     }
@@ -154,7 +215,14 @@ class PreferencesStore {
 
   dispatch = (action: PrefAction) => {
     this.state = this.reducer(this.state, action);
-    localStorage.setItem("preferences", JSON.stringify(this.state));
+
+    // Encode auth credentials before saving to localStorage
+    const stateToSave = {
+      ...this.state,
+      auth: this.encodeAuth(this.state.auth),
+    };
+
+    localStorage.setItem("preferences", JSON.stringify(stateToSave));
     this.listeners.forEach((listener) => listener());
   }
 

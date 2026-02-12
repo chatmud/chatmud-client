@@ -364,9 +364,89 @@ const MidiTab: React.FC = () => {
   );
 };
 
+const AuthTab: React.FC = () => {
+  const [state, dispatch] = usePreferences();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleAuthChange = (updates: Partial<typeof state.auth>) => {
+    dispatch({
+      type: PrefActionType.SetAuth,
+      data: { ...state.auth, ...updates },
+    });
+  };
+
+  return (
+    <div>
+      <h3>Auto-Login</h3>
+      <p style={{ color: "#666", fontSize: "0.9em", marginBottom: "1em" }}>
+        Automatically log in to your character when connecting to the server.
+        Credentials are stored locally in your browser.
+      </p>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={state.auth.autoLoginEnabled}
+          onChange={(e) => handleAuthChange({ autoLoginEnabled: e.target.checked })}
+        />
+        Enable Auto-Login
+      </label>
+      <br />
+      <br />
+
+      {state.auth.autoLoginEnabled && (
+        <>
+          <label>
+            Username:
+            <br />
+            <input
+              type="text"
+              value={state.auth.username}
+              onChange={(e) => handleAuthChange({ username: e.target.value })}
+              placeholder="Character name"
+              style={{ width: "300px", padding: "5px", marginTop: "5px" }}
+            />
+          </label>
+          <br />
+          <br />
+
+          <label>
+            Password:
+            <br />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={state.auth.password}
+              onChange={(e) => handleAuthChange({ password: e.target.value })}
+              placeholder="Password"
+              style={{ width: "300px", padding: "5px", marginTop: "5px" }}
+            />
+          </label>
+          <br />
+          <label style={{ fontSize: "0.9em" }}>
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.target.checked)}
+            />
+            Show password
+          </label>
+
+          <br />
+          <br />
+          <p style={{ color: "#ff9800", fontSize: "0.85em" }}>
+            ⚠️ Warning: Your password is stored in plain text in your browser's local storage.
+            Only use this on trusted devices.
+          </p>
+        </>
+      )}
+    </div>
+  );
+};
+
 const Preferences: React.FC = () => {
   const tabs = [
     { label: "General", content: <GeneralTab /> },
+    { label: "Auth", content: <AuthTab /> },
     { label: "Speech", content: <SpeechTab /> },
     { label: "Sounds", content: <SoundsTab /> },
     { label: "Editor", content: <EditorTab /> },
