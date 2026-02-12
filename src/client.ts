@@ -55,6 +55,7 @@ class MudClient extends EventEmitter {
 
   private host: string;
   private port: number;
+  private wsUrl?: string;
   private telnetNegotiation: boolean = false;
   private telnetBuffer: string = "";
   public gmcpHandlers: { [key: string]: GMCPPackage } = {};
@@ -90,10 +91,11 @@ class MudClient extends EventEmitter {
     this.emit('autosayChanged', value);
   }
 
-  constructor(host: string, port: number) {
+  constructor(host: string, port: number, wsUrl?: string) {
     super();
     this.host = host;
     this.port = port;
+    this.wsUrl = wsUrl;
     this.mcp_negotiate = this.registerMcpPackage(McpNegotiate);
     this.mcp_getset = this.registerMcpPackage(McpAwnsGetSet);
     this.gmcp_char = this.registerGMCPPackage(GMCPChar);
@@ -260,7 +262,8 @@ class MudClient extends EventEmitter {
 
   public connect() {
     this.intentionalDisconnect = false;
-    this.ws = new window.WebSocket(`wss://${this.host}:${this.port}`);
+    const url = this.wsUrl || `wss://${this.host}:${this.port}`;
+    this.ws = new window.WebSocket(url);
     this.ws.binaryType = "arraybuffer";
     this.telnet = new TelnetParser(new WebSocketStream(this.ws));
     this.ws.onopen = () => {
@@ -284,7 +287,7 @@ class MudClient extends EventEmitter {
         this.telnet.sendNegotiation(TelnetCommand.DO, TelnetOption.GMCP);
         (this.gmcpHandlers["Core"] as GMCPCore).sendHello();
         (this.gmcpHandlers["Core.Supports"] as GMCPCoreSupports).sendSet();
-        (this.gmcpHandlers["Auth.Autologin"] as GMCPAutoLogin).sendLogin();
+        (this.gmcpHandlers["Auth"] as GMCPAutoLogin).sendLogin();
       } else if (
         command === TelnetCommand.DO &&
         option === TelnetOption.TERMINAL_TYPE
@@ -336,12 +339,7 @@ class MudClient extends EventEmitter {
     this.currentRoomInfo = null; // Reset room info on cleanup
     this.webRTCService.cleanup();
     this.fileTransferManager.cleanup();
-    
-    // Reset intentional disconnect flag after handling disconnect
-    if (this.intentionalDisconnect) {
-      this.intentionalDisconnect = false;
-    }
-    
+
     this.emit("disconnect");
     this.emit("connectionChange", false);
   }
@@ -349,7 +347,7 @@ class MudClient extends EventEmitter {
   public close(): void {
     this.intentionalDisconnect = true;
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, "User disconnect");
     }
     this.cleanupConnection();
   }
