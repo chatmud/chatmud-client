@@ -47,3 +47,5 @@ docs
 Dockerfile
 docker-compose.yml
 .dockerignore
+DEPLOY.md
+webhook.js
