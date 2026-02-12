@@ -103,9 +103,10 @@ export interface ProxyConfig {
  * Message sent from proxy to client for session management
  */
 export interface ProxyMessage {
-  type: "session" | "error" | "reconnected" | "configUpdated";
+  type: "session" | "error" | "reconnected" | "configUpdated" | "bufferReplayComplete";
   sessionId?: string;
   bufferedCount?: number;
+  count?: number;
   error?: string;
   config?: SessionConfig;
 }

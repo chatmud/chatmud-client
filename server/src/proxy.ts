@@ -639,6 +639,7 @@ export class MudProxy {
     });
 
     // Replay buffered messages
+    const bufferedCount = session.buffer.length;
     for (const msg of session.buffer) {
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.send(msg.data);
@@ -648,6 +649,14 @@ export class MudProxy {
     // Clear buffer after replay
     session.buffer = [];
     session.bufferSize = 0;
+
+    // Notify client that buffer replay is complete
+    if (bufferedCount > 0 && clientWs.readyState === WebSocket.OPEN) {
+      this.sendProxyMessage(clientWs, {
+        type: "bufferReplayComplete",
+        count: bufferedCount,
+      });
+    }
 
     // Set up client event handlers
     this.setupClientHandlers(session, clientWs);

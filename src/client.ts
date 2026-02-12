@@ -50,6 +50,8 @@ class MudClient extends EventEmitter {
   private intentionalDisconnect: boolean = false;
   private sessionId: string | null = null;
   private readonly SESSION_STORAGE_KEY = "mudclient_session_id";
+  private replayingBufferedMessages: boolean = false;
+  private bufferedMessageCount: number = 0;
 
   get connected(): boolean {
     return this._connected;
@@ -323,6 +325,11 @@ class MudClient extends EventEmitter {
 
         case "reconnected":
           console.log("[Session] Reconnected to existing session:", message.sessionId, `(${message.bufferedCount} buffered messages)`);
+          this.bufferedMessageCount = message.bufferedCount;
+          if (message.bufferedCount > 0) {
+            this.replayingBufferedMessages = true;
+            this.emit("bufferReplayStart", message.bufferedCount);
+          }
           this.emit("sessionReconnected", message.sessionId, message.bufferedCount);
           break;
 
@@ -338,6 +345,13 @@ class MudClient extends EventEmitter {
         case "configUpdated":
           console.log("[Session] Configuration updated:", message.config);
           this.emit("sessionConfigUpdated", message.config);
+          break;
+
+        case "bufferReplayComplete":
+          console.log("[Session] Buffer replay complete:", message.count, "messages replayed");
+          this.replayingBufferedMessages = false;
+          this.bufferedMessageCount = 0;
+          this.emit("bufferReplayComplete", message.count);
           break;
 
         default:
@@ -615,7 +629,7 @@ An MCP message consists of three parts: the name of the message, the authenticat
     if (autoreadMode === AutoreadMode.Unfocused && !document.hasFocus()) {
       this.speak(dataString);
     }
-    this.emit("message", dataString);
+    this.emit("message", dataString, this.replayingBufferedMessages);
   }
 
   sendGmcp(packageName: string, data?: any) {

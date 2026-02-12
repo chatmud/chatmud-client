@@ -426,11 +426,13 @@ componentDidUpdate(
 scrollToBottom = () => { const output = this.outputRef.current; if (output) { 
 // Use requestAnimationFrame to ensure DOM updates are complete 
  requestAnimationFrame(() => { output.scrollTop = output.scrollHeight; }); } };
-  handleMessage = (message: string) => {
+  handleMessage = (message: string, isBuffered: boolean = false) => {
     if (!message) {
       return;
     }
     const elements = parseToElements(message, this.handleExitClick);
+    // Display buffered messages the same as live messages
+    // The isBuffered flag is available if we want to style them differently later
     this.addToOutput(elements, OutputType.ServerMessage, true, 'ansi', message);
   };
 
