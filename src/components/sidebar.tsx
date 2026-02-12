@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react"; // Import useState, useEffect
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import FileTransferUI from "./FileTransfer";
 import AudioChat from "./audioChat";
 import Tabs, { TabProps } from "./tabs";
 import Userlist from "./userlist";
@@ -32,7 +31,6 @@ interface SidebarProps {
 const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ client, collapsed, onToggleCollapse }, ref) => {
   const users = useClientEvent(client, "userlist", [] as UserlistPlayer[]);
   const [preferences] = usePreferences(); // Add preferences hook
-  const [fileTransferExpanded, setFileTransferExpanded] = useState(true); // Example state
 
   // State to track if data has been received for optional tabs
   // const [hasTargetData, setHasTargetData] = useState(false); // Removed
@@ -133,14 +131,14 @@ const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ client, collapsed,
     //   content: <DefencesList client={client} />,
     //   condition: hasDefencesData,
     // },
-    {
-      id: "files-tab",
-      label: "Files",
-      content: (
-        <FileTransferUI client={client} expanded={fileTransferExpanded} />
-      ),
-      condition: true, // Always show Files tab
-    },
+    // { // Removed Files Tab
+    //   id: "files-tab",
+    //   label: "Files",
+    //   content: (
+    //     <FileTransferUI client={client} expanded={fileTransferExpanded} />
+    //   ),
+    //   condition: true,
+    // },
     {
       id: "audio-tab",
       label: "Audio",
@@ -179,17 +177,6 @@ const Sidebar = React.forwardRef<SidebarRef, SidebarProps>(({ client, collapsed,
     }
   }), [visibleTabs]); // Dependency: visibleTabs
 
-
-  // Example effect to toggle file transfer based on activity
-  useEffect(() => {
-    const handleActivity = () => setFileTransferExpanded(true);
-    client.on("fileTransferOffer", handleActivity);
-    // Add listeners for other relevant events like progress, complete, error
-    return () => {
-      client.off("fileTransferOffer", handleActivity);
-      // Remove other listeners
-    };
-  }, [client]);
 
   // If no tabs are visible (e.g., only Users tab exists but no users yet),
   // you might want to render nothing or a placeholder.
