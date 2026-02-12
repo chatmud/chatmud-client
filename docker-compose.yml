@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/chatmud/react-client:latest
+    image: ghcr.io/chatmud/chatmud-client:latest
     container_name: chatmud-client
     ports:
       - "3000:3000"

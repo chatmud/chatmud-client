@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -26,19 +28,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VITE_WS_URL=/ws
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger deployment
-        if: success()
-        run: |
-          curl -f -X POST "${{ secrets.WEBHOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}"
