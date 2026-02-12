@@ -32,6 +32,8 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
+          build-args: |
+            VITE_WS_URL=/ws
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
