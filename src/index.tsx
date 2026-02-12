@@ -21,12 +21,18 @@ root.render(
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals(console.log);
 
-// Register service worker for PWA support
+// Register service worker for PWA support with update notification
 if (import.meta.env.PROD) {
-  registerSW()
+  const updateSW = registerSW({
+    onNeedRefresh() {
+      if (confirm('New version available. Reload to update?')) {
+        updateSW(true);
+      }
+    },
+    onOfflineReady() {
+      console.log('App ready to work offline');
+    },
+  });
 }
