@@ -33,6 +33,12 @@ import { WebRTCService } from "./WebRTCService";
 import FileTransferManager from "./FileTransferManager.js";
 import { GMCPMessageRoomInfo, RoomPlayer } from "./gmcp/Room"; // Import RoomPlayer
 import { midiService } from "./MidiService";
+import packageJson from "../package.json";
+
+// Build version string with commit hash if available
+const VERSION = packageJson.version;
+const COMMIT_HASH = import.meta.env.VITE_COMMIT_HASH || "dev";
+const CLIENT_VERSION = `ChatMUD Client ${VERSION} (${COMMIT_HASH.slice(0, 7)})`;
 
 export interface WorldData {
   liveKitTokens: string[];
@@ -429,7 +435,7 @@ class MudClient extends EventEmitter {
           TelnetCommand.WILL,
           TelnetOption.TERMINAL_TYPE
         );
-        this.telnet.sendTerminalType("Mongoose Client");
+        this.telnet.sendTerminalType(CLIENT_VERSION);
         this.telnet.sendTerminalType("ANSI");
         this.telnet.sendTerminalType("PROXY");
       }
