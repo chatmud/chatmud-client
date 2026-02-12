@@ -87,7 +87,10 @@ function App() {
 
   useEffect(() => {
     if (clientInitialized.current) return;
-    const newClient = new MudClient("chatmud.com", 9876);
+    const wsUrl = import.meta.env.VITE_WS_URL
+      ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}${import.meta.env.VITE_WS_URL}`
+      : undefined;
+    const newClient = new MudClient("chatmud.com", 7443, wsUrl);
     newClient.registerGMCPPackage(GMCPCore);
     newClient.registerGMCPPackage(GMCPClientMedia);
     newClient.registerGMCPPackage(GMCPClientMidi);

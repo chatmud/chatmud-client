@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { AudioConference, LiveKitRoom } from "@livekit/components-react";
 import MudClient from "../client";
 
-const serverUrl = "wss://mongoose-67t79p35.livekit.cloud";
+const serverUrl = "wss://chatmud-plj34hp4.livekit.cloud";
 
 interface AudioChatProps {
   client: MudClient;
