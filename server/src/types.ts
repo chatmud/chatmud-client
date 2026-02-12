@@ -1,4 +1,15 @@
 import type { WebSocket } from "ws";
+import type { TLSSocket } from "tls";
+import type { Socket } from "net";
+
+/**
+ * Hard limit for buffer size - not configurable
+ * 10MB maximum to prevent memory issues
+ */
+export const MAX_BUFFER_SIZE_BYTES = 10485760; // 10MB
+
+/** Upstream connection can be a TLS or plain TCP socket */
+export type UpstreamSocket = TLSSocket | Socket;
 
 // Forward declaration for TelnetEnvironHandler (defined in proxy.ts)
 export interface TelnetEnvironHandlerInterface {
@@ -17,13 +28,23 @@ export interface BufferedMessage {
 }
 
 /**
+ * Per-session configuration that can be customized by the user
+ */
+export interface SessionConfig {
+  /** How long to keep session alive after disconnect (ms) */
+  persistenceTimeout: number;
+  /** Maximum number of lines to buffer */
+  maxBufferLines: number;
+}
+
+/**
  * Represents a client session with persistence support
  */
 export interface Session {
   /** Unique session identifier */
   id: string;
-  /** WebSocket connection to the upstream MUD server */
-  upstream: WebSocket | null;
+  /** TCP/TLS connection to the upstream MUD server */
+  upstream: UpstreamSocket | null;
   /** WebSocket connection from the client browser */
   client: WebSocket | null;
   /** Messages buffered while client is disconnected */
@@ -44,6 +65,8 @@ export interface Session {
   clientPort?: number;
   /** Telnet NEW-ENVIRON handler for IP forwarding */
   telnetEnvHandler?: TelnetEnvironHandlerInterface;
+  /** Per-session configuration (user customizable) */
+  config: SessionConfig;
 }
 
 /**
@@ -54,22 +77,52 @@ export interface ProxyConfig {
   port: number;
   /** URL of the upstream MUD server */
   upstreamUrl: string;
-  /** How long to keep sessions alive after client disconnect (ms) */
+  /**
+   * How long to keep sessions alive after client disconnect (ms)
+   * - 0 = disconnect immediately (close upstream connection right away)
+   * - Max: 43200000 (12 hours)
+   * - Default: 300000 (5 minutes)
+   */
   persistenceTimeout: number;
-  /** Maximum number of messages to buffer per session */
-  maxBufferMessages: number;
-  /** Maximum total size of buffered messages per session (bytes) */
-  maxBufferSize: number;
+  /**
+   * Maximum number of lines/messages to buffer per session
+   * Buffer size is hard-limited to 10MB regardless of line count
+   * - Min: 10
+   * - Max: 10000
+   * - Default: 1000
+   */
+  maxBufferLines: number;
 }
 
 /**
  * Message sent from proxy to client for session management
  */
 export interface ProxyMessage {
-  type: "session" | "error" | "reconnected";
+  type: "session" | "error" | "reconnected" | "configUpdated";
   sessionId?: string;
   bufferedCount?: number;
   error?: string;
+  config?: SessionConfig;
+}
+
+/**
+ * Message sent from client to proxy for configuration updates
+ *
+ * To send from client:
+ * ```javascript
+ * const message = {
+ *   type: "updateConfig",
+ *   persistenceTimeout: 600000,  // 10 minutes
+ *   maxBufferLines: 500
+ * };
+ * const payload = new Uint8Array([0x00, ...new TextEncoder().encode(JSON.stringify(message))]);
+ * ws.send(payload);
+ * ```
+ */
+export interface ClientMessage {
+  type: "updateConfig";
+  persistenceTimeout?: number;
+  maxBufferLines?: number;
 }
 
 /**

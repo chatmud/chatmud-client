@@ -1,12 +1,24 @@
 import { WebSocket, WebSocketServer } from "ws";
 import type { IncomingMessage } from "http";
 import type { Server } from "http";
+import * as tls from "tls";
+import * as net from "net";
 import type {
   Session,
   ProxyConfig,
   BufferedMessage,
   ProxyMessage,
+  ClientMessage,
+  SessionConfig,
+  UpstreamSocket,
 } from "./types.js";
+import { MAX_BUFFER_SIZE_BYTES } from "./types.js";
+
+// Configuration limits (same as in index.ts)
+const CONFIG_LIMITS = {
+  PERSISTENCE_TIMEOUT: { MIN: 0, MAX: 43200000, DEFAULT: 300000 },
+  BUFFER_LINES: { MIN: 10, MAX: 10000, DEFAULT: 1000 },
+};
 
 // Telnet protocol constants
 const enum Telnet {
@@ -41,6 +53,46 @@ function generateSessionId(): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+/**
+ * Validate and clamp a config value to its limits
+ */
+function validateConfigValue(
+  value: number | undefined,
+  limits: { MIN: number; MAX: number; DEFAULT: number }
+): number {
+  if (value === undefined || isNaN(value)) {
+    return limits.DEFAULT;
+  }
+  return Math.max(limits.MIN, Math.min(limits.MAX, value));
+}
+
+/**
+ * Parse and validate session config from URL parameters or defaults
+ */
+function parseSessionConfig(
+  params: URLSearchParams,
+  defaultConfig: ProxyConfig
+): SessionConfig {
+  const persistenceTimeout = params.has("persistenceTimeout")
+    ? parseInt(params.get("persistenceTimeout")!, 10)
+    : defaultConfig.persistenceTimeout;
+
+  const maxBufferLines = params.has("maxBufferLines")
+    ? parseInt(params.get("maxBufferLines")!, 10)
+    : defaultConfig.maxBufferLines;
+
+  return {
+    persistenceTimeout: validateConfigValue(
+      persistenceTimeout,
+      CONFIG_LIMITS.PERSISTENCE_TIMEOUT
+    ),
+    maxBufferLines: validateConfigValue(
+      maxBufferLines,
+      CONFIG_LIMITS.BUFFER_LINES
+    ),
+  };
 }
 
 /**
@@ -387,26 +439,29 @@ export class MudProxy {
 
     console.log(`[Proxy] WebSocket proxy initialized on /ws`);
     console.log(`[Proxy] Upstream: ${config.upstreamUrl}`);
-    console.log(
-      `[Proxy] Persistence timeout: ${config.persistenceTimeout / 1000}s`
-    );
+    if (config.persistenceTimeout === 0) {
+      console.log(`[Proxy] Persistence: disabled (disconnect immediately)`);
+    } else {
+      console.log(
+        `[Proxy] Persistence timeout: ${config.persistenceTimeout / 1000}s (${config.persistenceTimeout / 3600000}h)`
+      );
+    }
+    console.log(`[Proxy] Max buffer lines: ${config.maxBufferLines}`);
+    console.log(`[Proxy] Max buffer size: ${MAX_BUFFER_SIZE_BYTES / 1048576}MB (hard limit)`);
   }
 
   /**
-   * Start periodic ping to keep WebSocket connections alive
+   * Start periodic ping to keep connections alive
    */
   private startPingInterval(): void {
     // Ping every 30 seconds
     this.pingInterval = setInterval(() => {
       for (const session of this.sessions.values()) {
-        // Ping client if connected
+        // Ping client WebSocket if connected
         if (session.client && session.client.readyState === WebSocket.OPEN) {
           session.client.ping();
         }
-        // Ping upstream if connected
-        if (session.upstream && session.upstream.readyState === WebSocket.OPEN) {
-          session.upstream.ping();
-        }
+        // No ping needed for raw TCP upstream - TCP keepalive handles it
       }
     }, 30000);
   }
@@ -457,14 +512,21 @@ export class MudProxy {
     if (sessionId && this.sessions.has(sessionId)) {
       this.handleReconnection(clientWs, sessionId, clientInfo.ip);
     } else {
-      this.createNewSession(clientWs, clientInfo.ip, clientInfo.port);
+      // Parse session config from URL parameters
+      const sessionConfig = parseSessionConfig(url.searchParams, this.config);
+      this.createNewSession(clientWs, clientInfo.ip, clientInfo.port, sessionConfig);
     }
   }
 
   /**
    * Create a new session for a client
    */
-  private createNewSession(clientWs: WebSocket, clientIp: string, clientPort: number): void {
+  private createNewSession(
+    clientWs: WebSocket,
+    clientIp: string,
+    clientPort: number,
+    sessionConfig: SessionConfig
+  ): void {
     const sessionId = generateSessionId();
 
     const session: Session = {
@@ -479,14 +541,16 @@ export class MudProxy {
       createdAt: Date.now(),
       clientIp,
       clientPort,
+      config: sessionConfig,
     };
 
     this.sessions.set(sessionId, session);
 
-    // Send session ID to client
+    // Send session ID and config to client
     this.sendProxyMessage(clientWs, {
       type: "session",
       sessionId,
+      config: sessionConfig,
     });
 
     // Connect to upstream - client IP will be sent via NEW-ENVIRON
@@ -495,7 +559,9 @@ export class MudProxy {
     // Set up client event handlers
     this.setupClientHandlers(session, clientWs);
 
-    console.log(`[Proxy] Created new session: ${sessionId}`);
+    console.log(
+      `[Proxy] Created new session: ${sessionId} (persistence: ${sessionConfig.persistenceTimeout}ms, buffer: ${sessionConfig.maxBufferLines} lines)`
+    );
   }
 
   /**
@@ -528,13 +594,11 @@ export class MudProxy {
       if (session.telnetEnvHandler) {
         session.telnetEnvHandler.setClientIp(newClientIp);
 
-        if (session.telnetEnvHandler.isNegotiated() &&
-            session.upstream &&
-            session.upstream.readyState === WebSocket.OPEN) {
+        if (session.telnetEnvHandler.isNegotiated() && this.isUpstreamAlive(session)) {
           // Send NEW-ENVIRON INFO with updated IP
           const infoMsg = session.telnetEnvHandler.buildIpInfoMessage();
           console.log(`[Proxy] Sending NEW-ENVIRON INFO with updated IP: ${newClientIp}`);
-          session.upstream.send(infoMsg);
+          session.upstream!.write(infoMsg);
         }
       }
     }
@@ -570,32 +634,74 @@ export class MudProxy {
   }
 
   /**
-   * Connect to upstream MUD server
+   * Parse upstream URL into host, port, and whether to use TLS
+   */
+  private parseUpstreamUrl(): { host: string; port: number; useTls: boolean } {
+    const url = this.config.upstreamUrl;
+    // Support formats: tls://host:port, tcp://host:port, host:port (defaults to TLS)
+    let useTls = true;
+    let hostPort = url;
+
+    if (url.startsWith("tls://") || url.startsWith("wss://") || url.startsWith("ssl://")) {
+      useTls = true;
+      hostPort = url.replace(/^(tls|wss|ssl):\/\//, "");
+    } else if (url.startsWith("tcp://") || url.startsWith("ws://") || url.startsWith("telnet://")) {
+      useTls = false;
+      hostPort = url.replace(/^(tcp|ws|telnet):\/\//, "");
+    }
+
+    const [host, portStr] = hostPort.split(":");
+    const port = parseInt(portStr || (useTls ? "7443" : "7777"), 10);
+
+    return { host, port, useTls };
+  }
+
+  /**
+   * Check if upstream socket is writable
+   */
+  private isUpstreamAlive(session: Session): boolean {
+    return !!(session.upstream && !session.upstream.destroyed && session.upstream.writable);
+  }
+
+  /**
+   * Connect to upstream MUD server via TCP/TLS
    */
   private connectUpstream(session: Session, clientIp: string): void {
-    console.log(`[Proxy] Connecting to upstream: ${this.config.upstreamUrl}`);
-
-    const upstream = new WebSocket(this.config.upstreamUrl);
+    const { host, port, useTls } = this.parseUpstreamUrl();
+    console.log(`[Proxy] Connecting to upstream: ${host}:${port} (${useTls ? "TLS" : "plain"})`);
 
     // Create telnet handler for NEW-ENVIRON negotiation
     session.telnetEnvHandler = new TelnetEnvironHandler(clientIp);
 
+    let upstream: UpstreamSocket;
+
+    if (useTls) {
+      upstream = tls.connect({
+        host,
+        port,
+        rejectUnauthorized: false, // MOO certs are often self-signed
+      }, () => {
+        console.log(`[Proxy] TLS upstream connected for session: ${session.id}`);
+        session.upstreamConnected = true;
+      });
+    } else {
+      upstream = net.connect({ host, port }, () => {
+        console.log(`[Proxy] TCP upstream connected for session: ${session.id}`);
+        session.upstreamConnected = true;
+      });
+    }
+
+    // Enable TCP keepalive
+    upstream.setKeepAlive(true, 30000);
+
     session.upstream = upstream;
 
-    upstream.on("open", () => {
-      console.log(`[Proxy] Upstream connected for session: ${session.id}`);
-      session.upstreamConnected = true;
-      // Client IP will be sent via NEW-ENVIRON when server requests it
-    });
-
-    upstream.on("message", (data: Buffer | string) => {
+    upstream.on("data", (data: Buffer) => {
       this.handleUpstreamMessage(session, data);
     });
 
-    upstream.on("close", (code, reason) => {
-      console.log(
-        `[Proxy] Upstream closed for session ${session.id}: ${code} ${reason}`
-      );
+    upstream.on("close", () => {
+      console.log(`[Proxy] Upstream closed for session ${session.id}`);
       session.upstreamConnected = false;
 
       // Notify client if connected
@@ -629,8 +735,8 @@ export class MudProxy {
       const result = session.telnetEnvHandler.processUpstreamData(buffer);
 
       // Send any telnet responses back to upstream
-      if (result.response && session.upstream && session.upstream.readyState === WebSocket.OPEN) {
-        session.upstream.send(result.response);
+      if (result.response && this.isUpstreamAlive(session)) {
+        session.upstream!.write(result.response);
       }
 
       // Use filtered data for forwarding to client
@@ -657,8 +763,8 @@ export class MudProxy {
   private bufferMessage(session: Session, data: Buffer | string): void {
     const size = Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data);
 
-    // Check if we'd exceed limits
-    if (session.buffer.length >= this.config.maxBufferMessages) {
+    // Check if we'd exceed line limit
+    if (session.buffer.length >= session.config.maxBufferLines) {
       // Remove oldest message
       const removed = session.buffer.shift();
       if (removed) {
@@ -669,17 +775,17 @@ export class MudProxy {
       }
     }
 
-    // If single message exceeds max buffer size, skip it
-    if (size > this.config.maxBufferSize) {
+    // If single message exceeds hard buffer size limit, skip it
+    if (size > MAX_BUFFER_SIZE_BYTES) {
       console.warn(
         `[Proxy] Message too large to buffer (${size} bytes), skipping`
       );
       return;
     }
 
-    // Remove old messages if we'd exceed size limit
+    // Remove old messages if we'd exceed hard size limit (10MB)
     while (
-      session.bufferSize + size > this.config.maxBufferSize &&
+      session.bufferSize + size > MAX_BUFFER_SIZE_BYTES &&
       session.buffer.length > 0
     ) {
       const removed = session.buffer.shift();
@@ -705,17 +811,33 @@ export class MudProxy {
    */
   private setupClientHandlers(session: Session, clientWs: WebSocket): void {
     clientWs.on("message", (data: Buffer | string) => {
-      // Forward to upstream if connected
-      if (session.upstream && session.upstream.readyState === WebSocket.OPEN) {
-        session.upstream.send(data);
+      // Check if this is a proxy control message (starts with 0x00)
+      if (Buffer.isBuffer(data) && data.length > 0 && data[0] === 0x00) {
+        try {
+          const payload = data.slice(1).toString();
+          const message: ClientMessage = JSON.parse(payload);
+          this.handleClientMessage(session, message);
+        } catch (error) {
+          console.error(`[Proxy] Failed to parse client message:`, error);
+        }
+        return;
+      }
+
+      // Forward normal messages to upstream if connected
+      if (this.isUpstreamAlive(session)) {
+        const buf = Buffer.isBuffer(data) ? data : Buffer.from(data as string);
+        session.upstream!.write(buf);
       }
     });
 
     clientWs.on("close", (code, reason) => {
       console.log(
-        `[Proxy] Client disconnected from session ${session.id}: ${code}`
+        `[Proxy] Client disconnected from session ${session.id}: ${code} ${reason}`
       );
-      this.handleClientDisconnect(session);
+      // Check if this is an intentional disconnect (code 1000 = normal closure)
+      // Intentional disconnects should always clean up immediately
+      const isIntentionalDisconnect = code === 1000;
+      this.handleClientDisconnect(session, isIntentionalDisconnect);
     });
 
     clientWs.on("error", (error) => {
@@ -724,28 +846,81 @@ export class MudProxy {
   }
 
   /**
-   * Handle client disconnect - start persistence timer
+   * Handle control message from client (config updates, etc.)
    */
-  private handleClientDisconnect(session: Session): void {
+  private handleClientMessage(session: Session, message: ClientMessage): void {
+    if (message.type === "updateConfig") {
+      const newConfig: SessionConfig = {
+        persistenceTimeout: validateConfigValue(
+          message.persistenceTimeout,
+          CONFIG_LIMITS.PERSISTENCE_TIMEOUT
+        ),
+        maxBufferLines: validateConfigValue(
+          message.maxBufferLines,
+          CONFIG_LIMITS.BUFFER_LINES
+        ),
+      };
+
+      // Update session config
+      session.config = newConfig;
+
+      console.log(
+        `[Proxy] Updated config for session ${session.id}: persistence=${newConfig.persistenceTimeout}ms, buffer=${newConfig.maxBufferLines} lines`
+      );
+
+      // Send confirmation to client
+      if (session.client && session.client.readyState === WebSocket.OPEN) {
+        this.sendProxyMessage(session.client, {
+          type: "configUpdated",
+          config: newConfig,
+        });
+      }
+    }
+  }
+
+  /**
+   * Handle client disconnect - start persistence timer or clean up immediately
+   * @param session The session that disconnected
+   * @param isIntentionalDisconnect True if user clicked disconnect (always clean up immediately)
+   */
+  private handleClientDisconnect(session: Session, isIntentionalDisconnect: boolean = false): void {
     session.client = null;
     session.disconnectedAt = Date.now();
 
     // Check if upstream is still alive
-    if (!session.upstream || session.upstream.readyState !== WebSocket.OPEN) {
+    if (!this.isUpstreamAlive(session)) {
       // Upstream already dead, clean up immediately
       this.cleanupSession(session.id);
       return;
     }
 
+    // If user intentionally disconnected, always clean up immediately
+    if (isIntentionalDisconnect) {
+      console.log(
+        `[Proxy] User intentionally disconnected from session ${session.id}, cleaning up immediately`
+      );
+      this.cleanupSession(session.id);
+      return;
+    }
+
+    // If persistence timeout is 0, disconnect immediately
+    if (session.config.persistenceTimeout === 0) {
+      console.log(
+        `[Proxy] Client disconnected from session ${session.id}, cleaning up immediately (persistence disabled)`
+      );
+      this.cleanupSession(session.id);
+      return;
+    }
+
     console.log(
-      `[Proxy] Starting persistence timer for session ${session.id} (${this.config.persistenceTimeout / 1000}s)`
+      `[Proxy] Starting persistence timer for session ${session.id} (${session.config.persistenceTimeout / 1000}s)`
     );
 
     // Start cleanup timeout
     session.cleanupTimeout = setTimeout(() => {
       console.log(`[Proxy] Persistence timeout reached for session ${session.id}`);
       this.cleanupSession(session.id);
-    }, this.config.persistenceTimeout);
+    }, session.config.persistenceTimeout);
   }
 
   /**
@@ -765,7 +940,7 @@ export class MudProxy {
     // Close upstream connection
     if (session.upstream) {
       try {
-        session.upstream.close();
+        session.upstream.destroy();
       } catch {
         // Ignore errors on close
       }

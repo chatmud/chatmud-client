@@ -4,16 +4,78 @@ import path from "path";
 import { MudProxy } from "./proxy.js";
 import type { ProxyConfig } from "./types.js";
 
-// Configuration from environment variables with defaults
-const config: ProxyConfig = {
+// Configuration limits
+const LIMITS = {
+  PERSISTENCE_TIMEOUT: {
+    MIN: 0,        // 0 = disconnect immediately
+    MAX: 43200000, // 12 hours in milliseconds
+    DEFAULT: 300000 // 5 minutes
+  },
+  BUFFER_LINES: {
+    MIN: 10,
+    MAX: 10000,
+    DEFAULT: 1000
+  }
+};
+
+/**
+ * Validate and clamp a numeric config value to its limits
+ */
+function validateConfig(
+  value: number,
+  limits: { MIN: number; MAX: number; DEFAULT: number },
+  name: string
+): number {
+  if (isNaN(value)) {
+    console.warn(`[Config] Invalid ${name}, using default: ${limits.DEFAULT}`);
+    return limits.DEFAULT;
+  }
+
+  if (value < limits.MIN) {
+    console.warn(
+      `[Config] ${name} (${value}) below minimum (${limits.MIN}), clamping to minimum`
+    );
+    return limits.MIN;
+  }
+
+  if (value > limits.MAX) {
+    console.warn(
+      `[Config] ${name} (${value}) above maximum (${limits.MAX}), clamping to maximum`
+    );
+    return limits.MAX;
+  }
+
+  return value;
+}
+
+// Configuration from environment variables with defaults and validation
+const rawConfig = {
   port: parseInt(process.env.PORT || "3001", 10),
-  upstreamUrl: process.env.UPSTREAM_URL || "wss://chatmud.com:9876",
+  upstreamUrl: process.env.UPSTREAM_URL || "tls://chatmud.com:7443",
   persistenceTimeout: parseInt(
-    process.env.PERSISTENCE_TIMEOUT_MS || "300000",
+    process.env.PERSISTENCE_TIMEOUT_MS || String(LIMITS.PERSISTENCE_TIMEOUT.DEFAULT),
     10
   ),
-  maxBufferMessages: parseInt(process.env.MAX_BUFFER_MESSAGES || "100", 10),
-  maxBufferSize: parseInt(process.env.MAX_BUFFER_SIZE || "10240", 10), // 10KB
+  maxBufferLines: parseInt(
+    process.env.MAX_BUFFER_LINES || String(LIMITS.BUFFER_LINES.DEFAULT),
+    10
+  ),
+};
+
+// Apply validation
+const config: ProxyConfig = {
+  port: rawConfig.port,
+  upstreamUrl: rawConfig.upstreamUrl,
+  persistenceTimeout: validateConfig(
+    rawConfig.persistenceTimeout,
+    LIMITS.PERSISTENCE_TIMEOUT,
+    "PERSISTENCE_TIMEOUT_MS"
+  ),
+  maxBufferLines: validateConfig(
+    rawConfig.maxBufferLines,
+    LIMITS.BUFFER_LINES,
+    "MAX_BUFFER_LINES"
+  ),
 };
 
 // Create Express app
@@ -39,8 +101,11 @@ app.get("/stats", (_req, res) => {
       config: {
         upstreamUrl: config.upstreamUrl,
         persistenceTimeout: config.persistenceTimeout,
-        maxBufferMessages: config.maxBufferMessages,
-        maxBufferSize: config.maxBufferSize,
+        persistenceTimeoutHuman: config.persistenceTimeout === 0
+          ? "disconnect immediately"
+          : `${config.persistenceTimeout / 1000}s`,
+        maxBufferLines: config.maxBufferLines,
+        maxBufferSizeBytes: 10485760, // Hard-coded 10MB limit
       },
     });
   } else {
