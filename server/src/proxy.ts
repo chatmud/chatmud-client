@@ -192,6 +192,25 @@ function buildWillNewEnviron(): Buffer {
 }
 
 /**
+ * Build HAProxy PROXY protocol v1 header
+ * Format: PROXY TCP4 <source_ip> <dest_ip> <source_port> <dest_port>\r\n
+ *
+ * This passes the original client connection info through the proxy.
+ * The upstream server can then see the real client IP instead of the proxy IP.
+ */
+function buildProxyProtocolHeader(
+  sourceIp: string,
+  destIp: string,
+  sourcePort: number,
+  destPort: number
+): Buffer {
+  // Determine if IPv4 or IPv6
+  const protocol = sourceIp.includes(":") ? "TCP6" : "TCP4";
+  const header = `PROXY ${protocol} ${sourceIp} ${destIp} ${sourcePort} ${destPort}\r\n`;
+  return Buffer.from(header, "ascii");
+}
+
+/**
  * Handles telnet NEW-ENVIRON negotiation for passing client IP to upstream
  */
 class TelnetEnvironHandler {
@@ -439,6 +458,7 @@ export class MudProxy {
 
     console.log(`[Proxy] WebSocket proxy initialized on /ws`);
     console.log(`[Proxy] Upstream: ${config.upstreamUrl}`);
+    console.log(`[Proxy] PROXY protocol: ${config.useProxyProtocol ? "enabled" : "disabled"}`);
     if (config.persistenceTimeout === 0) {
       console.log(`[Proxy] Persistence: disabled (disconnect immediately)`);
     } else {
@@ -675,20 +695,33 @@ export class MudProxy {
 
     let upstream: UpstreamSocket;
 
+    const onConnected = () => {
+      console.log(`[Proxy] ${useTls ? "TLS" : "TCP"} upstream connected for session: ${session.id}`);
+      session.upstreamConnected = true;
+
+      // Send PROXY protocol header if enabled
+      if (this.config.useProxyProtocol) {
+        const localAddress = upstream.localAddress || "127.0.0.1";
+        const localPort = upstream.localPort || 0;
+        const proxyHeader = buildProxyProtocolHeader(
+          clientIp,
+          localAddress,
+          session.clientPort || 0,
+          port
+        );
+        console.log(`[Proxy] Sending PROXY protocol header for ${clientIp}:${session.clientPort}`);
+        upstream.write(proxyHeader);
+      }
+    };
+
     if (useTls) {
       upstream = tls.connect({
         host,
         port,
         rejectUnauthorized: false, // MOO certs are often self-signed
-      }, () => {
-        console.log(`[Proxy] TLS upstream connected for session: ${session.id}`);
-        session.upstreamConnected = true;
-      });
+      }, onConnected);
     } else {
-      upstream = net.connect({ host, port }, () => {
-        console.log(`[Proxy] TCP upstream connected for session: ${session.id}`);
-        session.upstreamConnected = true;
-      });
+      upstream = net.connect({ host, port }, onConnected);
     }
 
     // Enable TCP keepalive

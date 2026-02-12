@@ -8,6 +8,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       UPSTREAM_URL: tls://chatmud.com:7443
+      USE_PROXY_PROTOCOL: "true"
     restart: unless-stopped
     logging:
       driver: json-file

@@ -60,6 +60,7 @@ const rawConfig = {
     process.env.MAX_BUFFER_LINES || String(LIMITS.BUFFER_LINES.DEFAULT),
     10
   ),
+  useProxyProtocol: process.env.USE_PROXY_PROTOCOL === "true",
 };
 
 // Apply validation
@@ -76,6 +77,7 @@ const config: ProxyConfig = {
     LIMITS.BUFFER_LINES,
     "MAX_BUFFER_LINES"
   ),
+  useProxyProtocol: rawConfig.useProxyProtocol,
 };
 
 // Create Express app
@@ -100,6 +102,7 @@ app.get("/stats", (_req, res) => {
       persistedSessions: stats.persisted,
       config: {
         upstreamUrl: config.upstreamUrl,
+        useProxyProtocol: config.useProxyProtocol,
         persistenceTimeout: config.persistenceTimeout,
         persistenceTimeoutHuman: config.persistenceTimeout === 0
           ? "disconnect immediately"

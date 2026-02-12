@@ -92,6 +92,11 @@ export interface ProxyConfig {
    * - Default: 1000
    */
   maxBufferLines: number;
+  /**
+   * Enable HAProxy PROXY protocol v1 to send client IP/port
+   * - Default: false
+   */
+  useProxyProtocol: boolean;
 }
 
 /**
