@@ -48,6 +48,8 @@ class MudClient extends EventEmitter {
   private telnet!: TelnetParser;
   private _connected: boolean = false;
   private intentionalDisconnect: boolean = false;
+  private sessionId: string | null = null;
+  private readonly SESSION_STORAGE_KEY = "mudclient_session_id";
 
   get connected(): boolean {
     return this._connected;
@@ -260,18 +262,120 @@ class MudClient extends EventEmitter {
     return mcpPackage;
   }
 
+  /**
+   * Load session ID from localStorage
+   */
+  private loadSessionId(): string | null {
+    try {
+      return localStorage.getItem(this.SESSION_STORAGE_KEY);
+    } catch (e) {
+      console.warn("[Session] Failed to load session ID from localStorage:", e);
+      return null;
+    }
+  }
+
+  /**
+   * Save session ID to localStorage
+   */
+  private saveSessionId(sessionId: string): void {
+    try {
+      localStorage.setItem(this.SESSION_STORAGE_KEY, sessionId);
+      this.sessionId = sessionId;
+      console.log("[Session] Saved session ID:", sessionId);
+    } catch (e) {
+      console.warn("[Session] Failed to save session ID to localStorage:", e);
+    }
+  }
+
+  /**
+   * Clear session ID from localStorage
+   */
+  private clearSessionId(): void {
+    try {
+      localStorage.removeItem(this.SESSION_STORAGE_KEY);
+      this.sessionId = null;
+      console.log("[Session] Cleared session ID");
+    } catch (e) {
+      console.warn("[Session] Failed to clear session ID from localStorage:", e);
+    }
+  }
+
+  /**
+   * Handle proxy control messages (session management)
+   */
+  private handleProxyMessage(data: ArrayBuffer): boolean {
+    // Proxy messages start with 0x00 byte
+    const view = new Uint8Array(data);
+    if (view.length === 0 || view[0] !== 0x00) {
+      return false; // Not a proxy message
+    }
+
+    try {
+      const payload = this.decoder.decode(data.slice(1));
+      const message = JSON.parse(payload);
+
+      switch (message.type) {
+        case "session":
+          console.log("[Session] Received new session ID:", message.sessionId);
+          this.saveSessionId(message.sessionId);
+          this.emit("sessionCreated", message.sessionId, message.config);
+          break;
+
+        case "reconnected":
+          console.log("[Session] Reconnected to existing session:", message.sessionId, `(${message.bufferedCount} buffered messages)`);
+          this.emit("sessionReconnected", message.sessionId, message.bufferedCount);
+          break;
+
+        case "error":
+          console.error("[Session] Proxy error:", message.error);
+          // If session not found, clear it and reconnect fresh
+          if (message.error === "Session not found") {
+            this.clearSessionId();
+          }
+          this.emit("sessionError", message.error);
+          break;
+
+        case "configUpdated":
+          console.log("[Session] Configuration updated:", message.config);
+          this.emit("sessionConfigUpdated", message.config);
+          break;
+
+        default:
+          console.warn("[Session] Unknown proxy message type:", message.type);
+      }
+
+      return true; // Proxy message handled
+    } catch (e) {
+      console.error("[Session] Failed to parse proxy message:", e);
+      return false;
+    }
+  }
+
   public connect() {
     this.intentionalDisconnect = false;
-    const url = this.wsUrl || `wss://${this.host}:${this.port}`;
+
+    // Load existing session ID if available
+    const existingSessionId = this.loadSessionId();
+
+    // Build WebSocket URL with optional sessionId parameter
+    let url = this.wsUrl || `wss://${this.host}:${this.port}`;
+    if (existingSessionId) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}sessionId=${existingSessionId}`;
+      console.log("[Session] Reconnecting with session ID:", existingSessionId);
+    } else {
+      console.log("[Session] Connecting without session ID (new session)");
+    }
+
     this.ws = new window.WebSocket(url);
     this.ws.binaryType = "arraybuffer";
     this.telnet = new TelnetParser(new WebSocketStream(this.ws));
     this.ws.onopen = () => {
       this._connected = true;
-      
+
       // Reset MIDI intentional disconnect flags when successfully reconnecting to server
       midiService.resetIntentionalDisconnectFlags();
-      
+
       this.emit("connect");
       this.emit("connectionChange", true);
     };
@@ -279,6 +383,20 @@ class MudClient extends EventEmitter {
     this.telnet.on("data", (data: ArrayBuffer) => {
       this.handleData(data);
     });
+
+    // Wrap the WebSocket's onmessage to intercept proxy messages
+    // This must be done AFTER telnet.on("data") so we wrap its handler
+    const originalOnMessage = this.ws.onmessage;
+    this.ws.onmessage = (event: MessageEvent) => {
+      // Check if this is a proxy control message
+      if (this.handleProxyMessage(event.data)) {
+        return; // Proxy message handled, don't pass to telnet parser
+      }
+      // Not a proxy message, pass to original handler (telnet parser)
+      if (originalOnMessage) {
+        originalOnMessage.call(this.ws, event);
+      }
+    };
 
     this.telnet.on("negotiation", (command, option) => {
       // Negotiation that we support GMCP
@@ -346,6 +464,8 @@ class MudClient extends EventEmitter {
 
   public close(): void {
     this.intentionalDisconnect = true;
+    // Clear session on intentional disconnect
+    this.clearSessionId();
     if (this.ws) {
       this.ws.close(1000, "User disconnect");
     }
