@@ -9,6 +9,8 @@ import { setInputText } from '../InputStore';
 import TurndownService from 'turndown'; // <-- Import TurndownService
 import { preferencesStore } from '../PreferencesStore'; // Import preferences store
 import BlockquoteWithCopy from './BlockquoteWithCopy';
+import { extractYoutubeVideoId } from './YoutubeEmbed';
+import YoutubeEmbed from './YoutubeEmbed';
 
 export enum OutputType {
   Command = 'command',
@@ -110,55 +112,90 @@ class Output extends React.Component<Props, State> {
         const parser = new DOMParser();
         const doc = parser.parseFromString(clean, 'text/html');
         const blockquotes = doc.querySelectorAll('blockquote');
-        
-        if (blockquotes.length > 0) {
+        const youtubeLinks = Array.from(doc.querySelectorAll('a[href]')).filter(link => {
+          return extractYoutubeVideoId((link as HTMLAnchorElement).href) !== null;
+        });
+
+        if (blockquotes.length > 0 || youtubeLinks.length > 0) {
           const elements: React.ReactElement[] = [];
           const bodyElement = doc.body;
           let currentContent = '';
-          
-          Array.from(bodyElement.childNodes).forEach((node, index) => {
+          let keyCounter = 0;
+
+          const processNode = (node: Node, index: number) => {
             if (node.nodeName === 'BLOCKQUOTE') {
               if (currentContent.trim()) {
                 elements.push(
-                  <div 
-                    key={`content-${index}`} 
-                    style={{ whiteSpace: "normal" }} 
-                    dangerouslySetInnerHTML={{ __html: currentContent }} 
+                  <div
+                    key={`content-${keyCounter++}`}
+                    style={{ whiteSpace: "normal" }}
+                    dangerouslySetInnerHTML={{ __html: currentContent }}
                   />
                 );
                 currentContent = '';
               }
-              
+
               const blockquoteElement = node as HTMLElement;
               const contentType = blockquoteElement.getAttribute('data-content-type') || undefined;
-              
+
               elements.push(
-                <BlockquoteWithCopy 
-                  key={`blockquote-${index}`} 
+                <BlockquoteWithCopy
+                  key={`blockquote-${keyCounter++}`}
                   contentType={contentType}
                 >
                   {blockquoteElement.innerHTML}
                 </BlockquoteWithCopy>
               );
+            } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === 'A') {
+              const linkElement = node as HTMLAnchorElement;
+              const videoId = extractYoutubeVideoId(linkElement.href);
+
+              if (videoId) {
+                if (currentContent.trim()) {
+                  elements.push(
+                    <div
+                      key={`content-${keyCounter++}`}
+                      style={{ whiteSpace: "normal" }}
+                      dangerouslySetInnerHTML={{ __html: currentContent }}
+                    />
+                  );
+                  currentContent = '';
+                }
+
+                elements.push(
+                  <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} />
+                );
+              } else {
+                currentContent += linkElement.outerHTML;
+              }
             } else {
               if (node.nodeType === Node.ELEMENT_NODE) {
-                currentContent += (node as HTMLElement).outerHTML;
+                const element = node as HTMLElement;
+                const hasSpecialChild = element.querySelector('blockquote, a[href]') !== null;
+
+                if (hasSpecialChild) {
+                  Array.from(node.childNodes).forEach((child, childIndex) => processNode(child, childIndex));
+                } else {
+                  currentContent += element.outerHTML;
+                }
               } else if (node.nodeType === Node.TEXT_NODE) {
                 currentContent += node.textContent || '';
               }
             }
-          });
-          
+          };
+
+          Array.from(bodyElement.childNodes).forEach(processNode);
+
           if (currentContent.trim()) {
             elements.push(
-              <div 
-                key="remaining-content" 
-                style={{ whiteSpace: "normal" }} 
-                dangerouslySetInnerHTML={{ __html: currentContent }} 
+              <div
+                key={`remaining-${keyCounter++}`}
+                style={{ whiteSpace: "normal" }}
+                dangerouslySetInnerHTML={{ __html: currentContent }}
               />
             );
           }
-          
+
           return elements;
         } else {
           return [<div style={{ whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: clean }}></div>];
@@ -399,70 +436,111 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
 
   handleHtml = (html: string) => {
     const clean = DOMPurify.sanitize(html);
-    
-    // Parse the cleaned HTML to detect blockquotes
+
+    // Parse the cleaned HTML to detect blockquotes and YouTube links
     const parser = new DOMParser();
     const doc = parser.parseFromString(clean, 'text/html');
     const blockquotes = doc.querySelectorAll('blockquote');
-    
-    if (blockquotes.length > 0) {
-      // If we have blockquotes, we need to process them individually
+    const youtubeLinks = Array.from(doc.querySelectorAll('a[href]')).filter(link => {
+      return extractYoutubeVideoId((link as HTMLAnchorElement).href) !== null;
+    });
+
+    if (blockquotes.length > 0 || youtubeLinks.length > 0) {
+      // If we have blockquotes or YouTube links, we need to process them individually
       const elements: React.ReactElement[] = [];
-      
-      // Split content around blockquotes
+
+      // Split content around blockquotes and YouTube links
       const bodyElement = doc.body;
       let currentContent = '';
-      
-      Array.from(bodyElement.childNodes).forEach((node, index) => {
+      let keyCounter = 0;
+
+      const processNode = (node: Node, index: number) => {
         if (node.nodeName === 'BLOCKQUOTE') {
           // Add any accumulated content before this blockquote
           if (currentContent.trim()) {
             elements.push(
-              <div 
-                key={`content-${index}`} 
-                style={{ whiteSpace: "normal" }} 
-                dangerouslySetInnerHTML={{ __html: currentContent }} 
+              <div
+                key={`content-${keyCounter++}`}
+                style={{ whiteSpace: "normal" }}
+                dangerouslySetInnerHTML={{ __html: currentContent }}
               />
             );
             currentContent = '';
           }
-          
+
           // Add the blockquote with copy functionality
           const blockquoteElement = node as HTMLElement;
           const contentType = blockquoteElement.getAttribute('data-content-type') || undefined;
-          
+
           elements.push(
-            <BlockquoteWithCopy 
-              key={`blockquote-${index}`} 
+            <BlockquoteWithCopy
+              key={`blockquote-${keyCounter++}`}
               contentType={contentType}
             >
               {blockquoteElement.innerHTML}
             </BlockquoteWithCopy>
           );
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === 'A') {
+          // Check if this is a YouTube link
+          const linkElement = node as HTMLAnchorElement;
+          const videoId = extractYoutubeVideoId(linkElement.href);
+
+          if (videoId) {
+            // Add any accumulated content before this embed
+            if (currentContent.trim()) {
+              elements.push(
+                <div
+                  key={`content-${keyCounter++}`}
+                  style={{ whiteSpace: "normal" }}
+                  dangerouslySetInnerHTML={{ __html: currentContent }}
+                />
+              );
+              currentContent = '';
+            }
+
+            // Add YouTube embed
+            elements.push(
+              <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} />
+            );
+          } else {
+            // Not a YouTube link, add to accumulated content
+            currentContent += linkElement.outerHTML;
+          }
         } else {
-          // Accumulate non-blockquote content
+          // Accumulate other content
           if (node.nodeType === Node.ELEMENT_NODE) {
-            currentContent += (node as HTMLElement).outerHTML;
+            // Check if this element contains YouTube links or blockquotes
+            const element = node as HTMLElement;
+            const hasSpecialChild = element.querySelector('blockquote, a[href]') !== null;
+
+            if (hasSpecialChild) {
+              // Process children individually
+              Array.from(node.childNodes).forEach((child, childIndex) => processNode(child, childIndex));
+            } else {
+              currentContent += element.outerHTML;
+            }
           } else if (node.nodeType === Node.TEXT_NODE) {
             currentContent += node.textContent || '';
           }
         }
-      });
-      
+      };
+
+      Array.from(bodyElement.childNodes).forEach(processNode);
+
       // Add any remaining content
       if (currentContent.trim()) {
         elements.push(
-          <div 
-            key="remaining-content" 
-            style={{ whiteSpace: "normal" }} 
-            dangerouslySetInnerHTML={{ __html: currentContent }} 
+          <div
+            key={`remaining-${keyCounter++}`}
+            style={{ whiteSpace: "normal" }}
+            dangerouslySetInnerHTML={{ __html: currentContent }}
           />
         );
       }
-      
+
       this.addToOutput(elements, OutputType.ServerMessage, true, 'html', html);
     } else {
-      // No blockquotes, use original logic
+      // No blockquotes or YouTube links, use original logic
       const e = <div style={{ whiteSpace: "normal" }} dangerouslySetInnerHTML={{ __html: clean }}></div>;
       this.addToOutput([e], OutputType.ServerMessage, true, 'html', html);
     }

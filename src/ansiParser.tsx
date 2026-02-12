@@ -1,4 +1,5 @@
 import Anser, { AnserJsonEntry } from "anser";
+import YoutubeEmbed, { extractYoutubeVideoId } from "./components/YoutubeEmbed";
 
 export function parseToElements(
     text: string,
@@ -20,6 +21,8 @@ export function parseToElements(
 
 const URL_REGEX =
     /(\s|^)((\w+):\/\/(?:www\.|(?!www))[^\s.]+\.[^\s]{2,}|www\.[^\s]+\.[^\s]{2,})/g;
+const YOUTUBE_REGEX =
+    /(\s|^)((?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|m\.youtube\.com\/watch\?v=)[a-zA-Z0-9_-]{11}(?:\S*)?)/g;
 const EMAIL_REGEX =
     /(?<slorp1>\s|^)(?<name>[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+[a-zA-Z])(?<slorp2>\s|$|\.)/g;
 const exitRegex = /@\[exit:([a-zA-Z]+)\]([a-zA-Z]+)@\[\/\]/g;
@@ -46,6 +49,27 @@ function convertBundleIntoReact(
             content.push(process(match));
             index = regex.lastIndex;
         }
+    }
+
+    function processYoutubeMatch(match: RegExpExecArray): React.ReactNode {
+        const [, pre, url] = match;
+        const videoId = extractYoutubeVideoId(url);
+
+        if (videoId) {
+            return (
+                <>
+                    {pre}
+                    <YoutubeEmbed videoId={videoId} url={url} key={keyCounter++} />
+                </>
+            );
+        }
+
+        // Fallback to regular link if video ID extraction fails
+        return (
+            <>{pre}<a href={url} target="_blank" rel="noreferrer">
+                {url}
+            </a></>
+        );
     }
 
     function processUrlMatch(match: RegExpExecArray): React.ReactNode {
@@ -83,6 +107,8 @@ function convertBundleIntoReact(
         );
     }
 
+    // Process YouTube URLs first, before generic URLs
+    processRegex(YOUTUBE_REGEX, processYoutubeMatch);
     processRegex(URL_REGEX, processUrlMatch);
     processRegex(EMAIL_REGEX, processEmailMatch);
     processRegex(exitRegex, processExitMatch);
