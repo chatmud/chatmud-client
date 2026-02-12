@@ -1,5 +1,6 @@
 services:
   app:
+    build: .
     image: ghcr.io/chatmud/chatmud-client:latest
     container_name: chatmud-client
     ports:
