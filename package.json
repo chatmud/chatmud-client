@@ -1,6 +1,6 @@
 {
-  "name": "mongoose-web-client",
-  "version": "0.7.0",
+  "name": "chatmud-client",
+  "version": "0.7.1",
   "homepage": "https://client.chatmud.com/",
   "dependencies": {
     "@livekit/components-react": "^2.9.17",
