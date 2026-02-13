@@ -42,6 +42,7 @@ import {
   GMCPRoom, // Added
 } from "./gmcp";
 import { FileTransferOffer, useClientEvent } from "./hooks/useClientEvent";
+import { useChannelHistory } from "./hooks/useChannelHistory";
 import {
   McpAwnsPing,
   McpAwnsStatus,
@@ -230,6 +231,9 @@ function App() {
     "fileTransferOffer",
     null as unknown as FileTransferOffer
   );
+
+  // Initialize channel history (runs invisibly in background)
+  useChannelHistory(client);
 
   const handleCommand = useCallback(
     (text: string) => {
