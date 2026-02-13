@@ -662,6 +662,18 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
 
     if (visibleOutput.length === 0) return;
 
+    // Check if this is a printable character (letter, number, symbol, space)
+    // If so, jump back to input
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      // This is a printable character - jump to input
+      this.setState({ focusedLineIndex: null });
+      if (this.props.focusInput) {
+        this.props.focusInput();
+      }
+      // Don't prevent default - let the character be typed in the input
+      return;
+    }
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
