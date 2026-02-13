@@ -832,16 +832,17 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
         onFocus={this.handleOutputFocus}
         onBlur={this.handleOutputBlur}
         tabIndex={0}
-        role="log"
-        aria-label="Game output log - use arrow keys to navigate"
-        aria-live="polite"
-        aria-atomic="false"
+        role="region"
+        aria-label="Game output - use arrow keys to navigate messages"
       >
         {visibleOutput.map((line, index) => (
           <div
             key={line.id}
             className={`output-line ${this.state.focusedLineIndex === index ? 'focused-line' : ''}`}
             data-line-index={index}
+            tabIndex={-1}
+            aria-posinset={index + 1}
+            aria-setsize={visibleOutput.length}
           >
             {line.content}
           </div>

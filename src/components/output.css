@@ -215,7 +215,7 @@ a.exit {
 }
 
 /* Make focus visible when navigating with keyboard */
-.output[role="log"]:focus {
+.output[role="region"]:focus {
   box-shadow: inset 0 0 0 2px var(--color-primary, #3b82f6);
 }
 
