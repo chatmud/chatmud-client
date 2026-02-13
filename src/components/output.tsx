@@ -680,7 +680,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
         this.setState(prevState => {
           const currentIndex = prevState.focusedLineIndex ?? -1;
           const nextIndex = Math.min(currentIndex + 1, visibleOutput.length - 1);
-          this.announceOutputLine(visibleOutput[nextIndex]);
+          this.announceOutputLine(visibleOutput[nextIndex], nextIndex);
           return { focusedLineIndex: nextIndex };
         }, this.scrollFocusedLineIntoView);
         break;
@@ -690,7 +690,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
         this.setState(prevState => {
           const currentIndex = prevState.focusedLineIndex ?? visibleOutput.length;
           const prevIndex = Math.max(currentIndex - 1, 0);
-          this.announceOutputLine(visibleOutput[prevIndex]);
+          this.announceOutputLine(visibleOutput[prevIndex], prevIndex);
           return { focusedLineIndex: prevIndex };
         }, this.scrollFocusedLineIntoView);
         break;
@@ -698,7 +698,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
       case 'Home':
         e.preventDefault();
         this.setState({ focusedLineIndex: 0 }, () => {
-          this.announceOutputLine(visibleOutput[0]);
+          this.announceOutputLine(visibleOutput[0], 0);
           this.scrollFocusedLineIntoView();
         });
         break;
@@ -707,7 +707,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
         e.preventDefault();
         const lastIndex = visibleOutput.length - 1;
         this.setState({ focusedLineIndex: lastIndex }, () => {
-          this.announceOutputLine(visibleOutput[lastIndex]);
+          this.announceOutputLine(visibleOutput[lastIndex], lastIndex);
           this.scrollFocusedLineIntoView();
         });
         break;
@@ -725,7 +725,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
   /**
    * Announce output line to screen readers
    */
-  announceOutputLine = (line: OutputLine) => {
+  announceOutputLine = (line: OutputLine, index?: number) => {
     if (!line) return;
 
     // Extract text content from the JSX element
@@ -734,8 +734,21 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
     tempDiv.innerHTML = html;
     const textContent = tempDiv.textContent || tempDiv.innerText || '';
 
+    // Add position indicator if at top or bottom
+    const visibleOutput = this.state.output.filter(
+      l => this.state.localEchoActive || l.type !== OutputType.Command
+    );
+    const currentIndex = index ?? this.state.focusedLineIndex ?? -1;
+
+    let announcement = textContent;
+    if (currentIndex === 0) {
+      announcement = 'Top. ' + textContent;
+    } else if (currentIndex === visibleOutput.length - 1) {
+      announcement = 'Bottom. ' + textContent;
+    }
+
     // Announce to screen reader
-    announce(textContent, 'polite');
+    announce(announcement, 'polite');
   };
 
   /**
