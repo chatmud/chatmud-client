@@ -750,6 +750,7 @@ An MCP message consists of three parts: the name of the message, the authenticat
   setGlobalMute(muted: boolean) {
     this.globalMuted = muted;
     this.updateBackgroundMuteState();
+    this.emit('muteChanged', muted);
   }
 }
 
