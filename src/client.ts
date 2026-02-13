@@ -400,6 +400,10 @@ class MudClient extends EventEmitter {
       // Reset MIDI intentional disconnect flags when successfully reconnecting to server
       midiService.resetIntentionalDisconnectFlags();
 
+      // Resume looping ambient sounds after reconnect
+      const media = this.gmcpHandlers["Client.Media"] as GMCPClientMedia;
+      media.resumeLoopingSounds();
+
       this.emit("connect");
       this.emit("connectionChange", true);
     };

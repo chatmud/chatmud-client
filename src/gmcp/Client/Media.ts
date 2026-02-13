@@ -58,6 +58,7 @@ export interface ExtendedSound extends Sound {
 export class GMCPClientMedia extends GMCPPackage {
   public packageName: string = "Client.Media";
   sounds: { [key: string]: ExtendedSound } = {};
+  private loopingPlayData: { [key: string]: GMCPMessageClientMediaPlay } = {};
   defaultUrl: string = "";
 
   handleDefault(url: string) {
@@ -163,6 +164,11 @@ export class GMCPClientMedia extends GMCPPackage {
     }
     sound.key = data.key;
     this.sounds[sound.key] = sound;
+
+    // Track looping sounds so they can be resumed after reconnect
+    if (data.loops === -1) {
+      this.loopingPlayData[data.key] = { ...data };
+    }
   }
 
   handleStop(data: GMCPMessageClientMediaStop): void {
@@ -186,6 +192,7 @@ export class GMCPClientMedia extends GMCPPackage {
 
   private stopSound(sound: ExtendedSound) {
     delete this.sounds[sound.key!];
+    delete this.loopingPlayData[sound.key!];
     sound.stop();
   }
 
@@ -233,5 +240,16 @@ export class GMCPClientMedia extends GMCPPackage {
   stopAllSounds() {
     this.allSounds.forEach((sound) => sound.stop());
     this.sounds = {};
+    this.loopingPlayData = {};
+  }
+
+  async resumeLoopingSounds() {
+    const entries = Object.entries(this.loopingPlayData);
+    if (entries.length === 0) return;
+    console.log(`[Media] Resuming ${entries.length} looping sound(s)`);
+    for (const [, playData] of entries) {
+      playData.continue = false;
+      await this.handlePlay(playData);
+    }
   }
 }
