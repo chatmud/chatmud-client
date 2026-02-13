@@ -623,6 +623,13 @@ export class MudProxy {
       }
     }
 
+    // Close the old client websocket if still open (prevents ghost sessions
+    // where the old window can send but never receives output)
+    if (session.client && session.client !== clientWs && session.client.readyState === WebSocket.OPEN) {
+      console.log(`[Proxy] Closing previous client connection for session: ${sessionId}`);
+      session.client.close(4000, "Session taken over by new client");
+    }
+
     // Update session with new client
     session.client = clientWs;
     session.disconnectedAt = null;
