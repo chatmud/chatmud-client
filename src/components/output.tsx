@@ -324,7 +324,7 @@ class Output extends React.Component<Props, State> {
       bufferedMessageCount: 0
     });
     // Announce summary instead of each individual message
-    announce(`Loaded ${count} buffered message${count === 1 ? '' : 's'}`, 'polite');
+    announce(`Loaded ${count} buffered message${count === 1 ? '' : 's'}`, 'polite', 2000);
   };
 
 getSnapshotBeforeUpdate(prevProps: Props, prevState: State) { 
@@ -434,9 +434,9 @@ componentDidUpdate(
         if (React.isValidElement(element)) {
           const htmlString = ReactDOMServer.renderToString(element);
           const plainText = this.sanitizeHtml(htmlString);
-          announce(plainText);
+          announce(plainText, "assertive", 2000);
         } else if (typeof element === "string") {
-          announce(element);
+          announce(element, "assertive", 2000);
         }
       });
     }
@@ -782,7 +782,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
     }
 
     // Announce to screen reader
-    announce(announcement, 'polite');
+    announce(announcement, 'polite', 2000);
   };
 
   /**

@@ -218,21 +218,21 @@ export const useChannelHistory = (client: MudClient | null) => {
       const currentIdx = buffer.currentIndex;
       announce(
         `${buffer.name}: ${currentIdx > 0 ? currentIdx : messageCount > 0 ? messageCount : 0} of ${messageCount}`,
-        "assertive"
+        "assertive", 2000
       );
     }
   };
 
   const jumpToBuffer = (bufferIndex: number) => {
     if (bufferIndex < 0 || bufferIndex >= bufferOrder.length) {
-      announce("That buffer doesn't exist yet.", "assertive");
+      announce("That buffer doesn't exist yet.", "assertive", 2000);
       return;
     }
 
     setCurrentBufferIndex(bufferIndex);
     const buffer = buffers.get(bufferOrder[bufferIndex]);
     if (buffer) {
-      announce(`${buffer.name}: ${buffer.currentIndex || buffer.messages.length} of ${buffer.messages.length}`, "assertive");
+      announce(`${buffer.name}: ${buffer.currentIndex || buffer.messages.length} of ${buffer.messages.length}`, "assertive", 2000);
     }
   };
 
@@ -272,7 +272,7 @@ export const useChannelHistory = (client: MudClient | null) => {
       announcement += " " + relativeTime;
     }
 
-    announce(announcement, "assertive");
+    announce(announcement, "assertive", 2000);
   };
 
   const readMessage = (messageNumber: number, isFromAllBuffer: boolean = false) => {
@@ -280,12 +280,12 @@ export const useChannelHistory = (client: MudClient | null) => {
     const buffer = buffers.get(bufferName);
 
     if (!buffer || buffer.messages.length === 0) {
-      announce("No messages", "assertive");
+      announce("No messages", "assertive", 2000);
       return;
     }
 
     if (messageNumber > buffer.messages.length) {
-      announce("No message", "assertive");
+      announce("No message", "assertive", 2000);
       return;
     }
 
@@ -293,7 +293,7 @@ export const useChannelHistory = (client: MudClient | null) => {
     const message = buffer.messages[realIndex];
 
     if (!message) {
-      announce("No message", "assertive");
+      announce("No message", "assertive", 2000);
       return;
     }
 
@@ -304,7 +304,7 @@ export const useChannelHistory = (client: MudClient | null) => {
     const buffer = getCurrentBuffer();
 
     if (!buffer || buffer.messages.length === 0) {
-      announce("No messages", "assertive");
+      announce("No messages", "assertive", 2000);
       return;
     }
 
@@ -346,14 +346,14 @@ export const useChannelHistory = (client: MudClient | null) => {
   const copyCurrentMessage = () => {
     const buffer = getCurrentBuffer();
     if (!buffer || buffer.currentIndex === 0) {
-      announce("No message selected", "assertive");
+      announce("No message selected", "assertive", 2000);
       return;
     }
 
     const message = buffer.messages[buffer.currentIndex - 1];
     if (message) {
       navigator.clipboard.writeText(message.message).then(() => {
-        announce("Copied", "assertive");
+        announce("Copied", "assertive", 2000);
       });
     }
   };
@@ -365,7 +365,7 @@ export const useChannelHistory = (client: MudClient | null) => {
         enabled
           ? "You will now hear an approximate time after every message."
           : "Timestamps will no longer be spoken after messages.",
-        "assertive"
+        "assertive", 2000
       );
       return enabled;
     });
@@ -375,12 +375,12 @@ export const useChannelHistory = (client: MudClient | null) => {
     const currentBufferName = bufferOrder[currentBufferIndex];
 
     if (currentBufferName === "all") {
-      announce("Cannot delete the all buffer", "assertive");
+      announce("Cannot delete the all buffer", "assertive", 2000);
       return;
     }
 
     if (bufferOrder.length === 1) {
-      announce("Cannot delete the last buffer", "assertive");
+      announce("Cannot delete the last buffer", "assertive", 2000);
       return;
     }
 
@@ -397,7 +397,7 @@ export const useChannelHistory = (client: MudClient | null) => {
 
       const newBuffer = buffers.get(newOrder[newIndex]);
       if (newBuffer) {
-        announce(newBuffer.name, "assertive");
+        announce(newBuffer.name, "assertive", 2000);
       }
 
       return newOrder;
@@ -454,7 +454,7 @@ export const useChannelHistory = (client: MudClient | null) => {
               const message = buffer.messages[realIndex];
               if (message) {
                 navigator.clipboard.writeText(message.message).then(() => {
-                  announce("Copied", "assertive");
+                  announce("Copied", "assertive", 2000);
                 });
               }
             }
