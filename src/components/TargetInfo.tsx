@@ -29,7 +29,7 @@ const TargetInfoDisplay: React.FC<TargetInfoProps> = ({ client }) => {
     client.on("targetSet", handleSet); // Listen for server-side set (e.g., tab target)
 
     // Request initial info if supported and target exists?
-    // This depends on game logic - maybe only request when explicitly set.
+    // This depends on MOO logic - maybe only request when explicitly set.
     // if (client.gmcpHandlers['IRE.Target']) {
     //     client.gmcpHandlers['IRE.Target'].sendRequestInfo?.();
     // }

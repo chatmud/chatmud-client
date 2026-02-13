@@ -153,7 +153,7 @@ const AudioChat: React.FC<AudioChatProps> = ({ client }) => {
         <div className="empty-state">
           <FaMicrophone className="empty-icon" />
           <h3>No Active Voice Channels</h3>
-          <p>Join a voice-enabled room in the game to start talking with other players.</p>
+          <p>Join a voice-enabled room in the MOO to start talking with other players.</p>
         </div>
       </div>
     );
