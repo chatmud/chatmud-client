@@ -9,7 +9,9 @@ RUN rm -f package-lock.json && npm install --quiet
 # Copy source and build
 COPY . .
 ARG VITE_WS_URL=/ws
+ARG VITE_COMMIT_HASH=unknown
 ENV VITE_WS_URL=$VITE_WS_URL
+ENV VITE_COMMIT_HASH=$VITE_COMMIT_HASH
 RUN npm run build
 
 # Build proxy server

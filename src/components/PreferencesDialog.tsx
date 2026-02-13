@@ -1,6 +1,5 @@
-// @ts-expect-error This import is virtually resolved
-import CommitHash from 'virtual:commit-hash';
 import React, { useEffect, useRef, useState } from "react";
+import packageJson from "../../package.json";
 import Preferences from "./preferences";
 import "./PreferencesDialog.css";
 import FocusLock from "react-focus-lock";
@@ -67,7 +66,7 @@ const PreferencesDialog = React.forwardRef<PreferencesDialogRef>((_, ref) => {
         <button onClick={() => setIsOpen(false)}>Close</button>
         <br />
         <span id="commit-hash">
-          Version: {CommitHash}
+          {packageJson.version} ({(import.meta.env.VITE_COMMIT_HASH || "dev").slice(0, 7)})
         </span>
 
       </dialog>
