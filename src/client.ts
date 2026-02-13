@@ -54,6 +54,8 @@ class MudClient extends EventEmitter {
   private telnet!: TelnetParser;
   private _connected: boolean = false;
   private intentionalDisconnect: boolean = false;
+  private reconnectAttempts: number = 0;
+  private hasEmittedDisconnect: boolean = false;
   private sessionId: string | null = null;
   private readonly SESSION_STORAGE_KEY = "mudclient_session_id";
   private replayingBufferedMessages: boolean = false;
@@ -392,6 +394,8 @@ class MudClient extends EventEmitter {
     this.telnet = new TelnetParser(new WebSocketStream(this.ws));
     this.ws.onopen = () => {
       this._connected = true;
+      this.reconnectAttempts = 0;
+      this.hasEmittedDisconnect = false;
 
       // Reset MIDI intentional disconnect flags when successfully reconnecting to server
       midiService.resetIntentionalDisconnectFlags();
@@ -451,12 +455,16 @@ class MudClient extends EventEmitter {
     });
 
     this.ws.onclose = () => {
-      this.cleanupConnection();
+      const wasConnected = this._connected;
+      this.cleanupConnection(wasConnected);
       // Only auto reconnect if it wasn't an intentional disconnect
       if (!this.intentionalDisconnect) {
+        // Exponential backoff: 5s, 10s, 20s, 40s, capped at 60s
+        const delay = Math.min(5000 * Math.pow(2, this.reconnectAttempts), 60000);
+        this.reconnectAttempts++;
         setTimeout(() => {
           this.connect();
-        }, 10000);
+        }, delay);
       }
     };
 
@@ -469,7 +477,7 @@ class MudClient extends EventEmitter {
     this.ws.send(data);
   }
 
-  private cleanupConnection(): void {
+  private cleanupConnection(wasConnected: boolean = true): void {
     this._connected = false;
     this.mcpAuthKey = null;
     this.telnetBuffer = "";
@@ -478,12 +486,18 @@ class MudClient extends EventEmitter {
     this.webRTCService.cleanup();
     this.fileTransferManager.cleanup();
 
-    this.emit("disconnect");
-    this.emit("connectionChange", false);
+    // Only emit disconnect once — not on every failed reconnect attempt
+    if (!this.hasEmittedDisconnect) {
+      this.hasEmittedDisconnect = true;
+      this.emit("disconnect");
+      this.emit("connectionChange", false);
+    }
   }
 
   public close(): void {
     this.intentionalDisconnect = true;
+    this.reconnectAttempts = 0;
+    this.hasEmittedDisconnect = false;
     // Clear session on intentional disconnect
     this.clearSessionId();
     if (this.ws) {
