@@ -445,7 +445,22 @@ export const useChannelHistory = (client: MudClient | null) => {
         if (!isNaN(digit) && digit >= 0 && digit <= 9) {
           e.preventDefault(); // Prevent Command from switching tabs / Alt from typing special chars
           const messageNum = digit === 0 ? 10 : digit;
-          readMessage(messageNum, false); // false = from current buffer
+          if (pressCount >= 2) {
+            // Double-press copies the message
+            readMessage(messageNum, false);
+            const buffer = getCurrentBuffer();
+            if (buffer) {
+              const realIndex = buffer.messages.length - messageNum;
+              const message = buffer.messages[realIndex];
+              if (message) {
+                navigator.clipboard.writeText(message.message).then(() => {
+                  announce("Copied", "assertive");
+                });
+              }
+            }
+          } else {
+            readMessage(messageNum, false); // false = from current buffer
+          }
           return;
         }
       }
@@ -505,14 +520,14 @@ export const useChannelHistory = (client: MudClient | null) => {
       }
 
       // Alt+Space: Repeat current message
-      if (e.altKey && e.key === " " && !e.shiftKey) {
+      if (e.altKey && !e.shiftKey && e.code === "Space") {
         e.preventDefault();
         navigateMessage(0);
         return;
       }
 
       // Alt+Shift+Space: Copy current message
-      if (e.altKey && e.shiftKey && e.key === " ") {
+      if (e.altKey && e.shiftKey && e.code === "Space") {
         e.preventDefault();
         copyCurrentMessage();
         return;
