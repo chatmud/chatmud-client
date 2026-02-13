@@ -1,11 +1,11 @@
 services:
-  # Backend - WebSocket proxy server
-  backend:
+  # WebSocket proxy server
+  proxy:
     build:
       context: .
       target: backend
-    image: ghcr.io/chatmud/chatmud-backend:latest
-    container_name: chatmud-backend
+    image: ghcr.io/chatmud/chatmud-proxy:latest
+    container_name: chatmud-proxy
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -20,17 +20,17 @@ services:
         max-size: 10m
         max-file: "3"
 
-  # Frontend - nginx serving static files
-  frontend:
+  # nginx serving static files
+  web:
     build:
       context: .
       target: frontend
-    image: ghcr.io/chatmud/chatmud-frontend:latest
-    container_name: chatmud-frontend
+    image: ghcr.io/chatmud/chatmud-web:latest
+    container_name: chatmud-web
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      - proxy
     restart: unless-stopped
     networks:
       - chatmud
