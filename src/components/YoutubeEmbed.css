@@ -1,10 +1,98 @@
 .youtube-embed-container {
   margin: 0.5rem 0;
   max-width: 100%;
-  background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
-  padding: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Collapsed state - compact display */
+.youtube-embed-collapsed {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: fit-content;
+  transition: background 0.2s;
+}
+
+.youtube-embed-collapsed:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.youtube-embed-expand-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  font-size: 0.9em;
+  transition: opacity 0.2s;
+}
+
+.youtube-embed-expand-button:hover {
+  opacity: 0.8;
+}
+
+.youtube-icon {
+  font-size: 1em;
+}
+
+.youtube-title {
+  color: #ff0000;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.youtube-embed-external-link {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.9em;
+  padding: 0.2rem 0.4rem;
+  transition: color 0.2s;
+}
+
+.youtube-embed-external-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Expanded state - full embed */
+.youtube-embed-expanded {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+}
+
+.youtube-embed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.youtube-embed-header .youtube-title {
+  font-size: 0.95em;
+  max-width: none;
+  flex: 1;
+}
+
+.youtube-embed-collapse-button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 1.2em;
+  padding: 0.2rem 0.4rem;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.youtube-embed-collapse-button:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .youtube-embed-iframe {
