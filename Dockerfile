@@ -27,8 +27,8 @@ RUN npm install --quiet --save-dev typescript @types/node && \
     npm run build && \
     npm prune --production
 
-# Production - serves BOTH client and proxy
-FROM node:20-alpine AS production
+# Backend service - WebSocket proxy only
+FROM node:20-alpine AS backend
 WORKDIR /app
 
 # Install dumb-init for proper signal handling
@@ -43,23 +43,36 @@ COPY --from=server-build --chown=nodejs:nodejs /app/server/dist ./dist
 COPY --from=server-build --chown=nodejs:nodejs /app/server/node_modules ./node_modules
 COPY --from=server-build --chown=nodejs:nodejs /app/server/package.json ./
 
-# Copy React client build to be served as static files
-COPY --from=client-build --chown=nodejs:nodejs /app/dist ./public
-
 # Switch to non-root user
 USER nodejs
 
 # Environment defaults
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=3001 \
     UPSTREAM_URL=tls://chatmud.com:7443
 
-EXPOSE 3000
+EXPOSE 3001
 
-# Health check
+# Health check for backend
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/index.js"]
+
+# Frontend service - nginx serving static files
+FROM nginx:alpine AS frontend
+WORKDIR /usr/share/nginx/html
+
+# Copy built client files
+COPY --from=client-build /app/dist ./
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+
+# Health check for frontend
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
