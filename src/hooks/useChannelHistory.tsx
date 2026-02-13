@@ -134,6 +134,8 @@ export const useChannelHistory = (client: MudClient | null) => {
 
   // Handle regular messages
   const handleMessage = (message: string, isBuffered: boolean = false) => {
+    if (!message.trim()) return;
+
     if (isReplayingBuffer.current && isBuffered) {
       // Queue buffered messages instead of adding them one-by-one
       bufferedMessagesQueue.current.push({
