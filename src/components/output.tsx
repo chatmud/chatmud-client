@@ -833,7 +833,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
         onBlur={this.handleOutputBlur}
         tabIndex={0}
         role="region"
-        aria-label="Game output - use arrow keys to navigate messages"
+        aria-label="Output"
       >
         {visibleOutput.map((line, index) => (
           <div
