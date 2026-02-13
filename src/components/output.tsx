@@ -54,6 +54,9 @@ interface State {
   newLinesCount: number; // Added to track the count of new lines
   localEchoActive: boolean; // To store the current local echo preference
   focusedLineIndex: number | null; // Index of currently focused line for keyboard navigation
+  isReplayingBuffer: boolean; // Track if we're replaying buffered messages
+  bufferedMessageCount: number; // Count of buffered messages being replayed
+  muted: boolean; // Track global mute state
 }
 
 // Add a small threshold for scroll calculations to handle browser differences
@@ -76,6 +79,9 @@ class Output extends React.Component<Props, State> {
       newLinesCount: 0,
       localEchoActive: preferencesStore.getState().general.localEcho,
       focusedLineIndex: null,
+      isReplayingBuffer: false,
+      bufferedMessageCount: 0,
+      muted: props.client.cacophony?.muted ?? false,
     };
   }
 
@@ -83,6 +89,10 @@ class Output extends React.Component<Props, State> {
     this.setState({
       localEchoActive: preferencesStore.getState().general.localEcho,
     });
+  };
+
+  handleMuteChange = (muted: boolean) => {
+    this.setState({ muted });
   };
 
   saveOutput = () => {
@@ -165,7 +175,7 @@ class Output extends React.Component<Props, State> {
                 }
 
                 elements.push(
-                  <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} />
+                  <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} muted={this.state.muted} />
                 );
               } else {
                 currentContent += linkElement.outerHTML;
@@ -299,6 +309,24 @@ class Output extends React.Component<Props, State> {
   handleUserList = (players: any) =>
     this.setState({ sidebarVisible: !!players });
 
+  handleBufferReplayStart = (count: number) => {
+    console.log(`[Output] Buffer replay starting: ${count} messages`);
+    this.setState({
+      isReplayingBuffer: true,
+      bufferedMessageCount: count
+    });
+  };
+
+  handleBufferReplayComplete = (count: number) => {
+    console.log(`[Output] Buffer replay complete: ${count} messages`);
+    this.setState({
+      isReplayingBuffer: false,
+      bufferedMessageCount: 0
+    });
+    // Announce summary instead of each individual message
+    announce(`Loaded ${count} buffered message${count === 1 ? '' : 's'}`, 'polite');
+  };
+
 getSnapshotBeforeUpdate(prevProps: Props, prevState: State) { 
     // Check if the user is scrolled to the bottom before the update
 
@@ -365,6 +393,9 @@ componentDidUpdate(
     client.on("error", this.addError);
     client.on("command", this.addCommand);
     client.on("userlist", this.handleUserList);
+    client.on("bufferReplayStart", this.handleBufferReplayStart);
+    client.on("bufferReplayComplete", this.handleBufferReplayComplete);
+    client.on("muteChanged", this.handleMuteChange);
     this.unsubscribePrefs = preferencesStore.subscribe(this.handlePreferencesChange);
   }
 
@@ -380,6 +411,9 @@ componentDidUpdate(
     client.removeListener("error", this.addError);
     client.removeListener("command", this.addCommand);
     client.removeListener("userlist", this.handleUserList);
+    client.removeListener("bufferReplayStart", this.handleBufferReplayStart);
+    client.removeListener("bufferReplayComplete", this.handleBufferReplayComplete);
+    client.removeListener("muteChanged", this.handleMuteChange);
   }
 
   sanitizeHtml(html: string): string {
@@ -433,9 +467,9 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
       return;
     }
     const elements = parseToElements(message, this.handleExitClick);
-    // Display buffered messages the same as live messages
-    // The isBuffered flag is available if we want to style them differently later
-    this.addToOutput(elements, OutputType.ServerMessage, true, 'ansi', message);
+    // Silent announcements during buffer replay - we'll announce a summary at the end
+    const shouldAnnounce = !this.state.isReplayingBuffer;
+    this.addToOutput(elements, OutputType.ServerMessage, shouldAnnounce, 'ansi', message);
   };
 
   handleHtml = (html: string) => {
@@ -504,7 +538,7 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
 
             // Add YouTube embed
             elements.push(
-              <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} />
+              <YoutubeEmbed key={`youtube-${keyCounter++}`} videoId={videoId} url={linkElement.href} muted={this.state.muted} />
             );
           } else {
             // Not a YouTube link, add to accumulated content
