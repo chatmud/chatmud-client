@@ -165,9 +165,6 @@ export const useChannelHistory = (client: MudClient | null) => {
     const { channel, talker, text } = data;
     const fullMessage = `[${channel}] ${talker}: ${text}`;
 
-    // Add to "all" buffer
-    addMessageToBuffer("all", fullMessage, channel, talker);
-
     // Create channel buffer if it doesn't exist
     if (!buffers.has(channel)) {
       setBuffers(prev => {
