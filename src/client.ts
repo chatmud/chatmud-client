@@ -483,7 +483,6 @@ class MudClient extends EventEmitter {
 
   private cleanupConnection(wasConnected: boolean = true): void {
     this._connected = false;
-    this.mcpAuthKey = null;
     this.telnetBuffer = "";
     this.telnetNegotiation = false;
     this.currentRoomInfo = null; // Reset room info on cleanup
@@ -502,8 +501,9 @@ class MudClient extends EventEmitter {
     this.intentionalDisconnect = true;
     this.reconnectAttempts = 0;
     this.hasEmittedDisconnect = false;
-    // Clear session on intentional disconnect
+    // Clear session and MCP auth key on intentional disconnect
     this.clearSessionId();
+    this.mcpAuthKey = null;
     if (this.ws) {
       this.ws.close(1000, "User disconnect");
     }
