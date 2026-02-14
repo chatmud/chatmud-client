@@ -14,17 +14,17 @@ ENV VITE_WS_URL=$VITE_WS_URL
 ENV VITE_COMMIT_HASH=$VITE_COMMIT_HASH
 RUN npm run build
 
-# Build proxy server
-FROM node:20-alpine AS server-build
-WORKDIR /app/server
+# Build WebSocket proxy
+FROM node:20-alpine AS proxy-build
+WORKDIR /app/proxy
 
 # Install dependencies first for better caching
-COPY server/package*.json ./
+COPY proxy/package*.json ./
 RUN npm ci --quiet --only=production
 
 # Copy TypeScript source and build
-COPY server/tsconfig.json ./
-COPY server/src ./src
+COPY proxy/tsconfig.json ./
+COPY proxy/src ./src
 RUN npm install --quiet --save-dev typescript @types/node && \
     npm run build && \
     npm prune --production
@@ -40,10 +40,10 @@ RUN apk add --no-cache dumb-init
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy server with correct ownership
-COPY --from=server-build --chown=nodejs:nodejs /app/server/dist ./dist
-COPY --from=server-build --chown=nodejs:nodejs /app/server/node_modules ./node_modules
-COPY --from=server-build --chown=nodejs:nodejs /app/server/package.json ./
+# Copy proxy with correct ownership
+COPY --from=proxy-build --chown=nodejs:nodejs /app/proxy/dist ./dist
+COPY --from=proxy-build --chown=nodejs:nodejs /app/proxy/node_modules ./node_modules
+COPY --from=proxy-build --chown=nodejs:nodejs /app/proxy/package.json ./
 
 # Switch to non-root user
 USER nodejs
