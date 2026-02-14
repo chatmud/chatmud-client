@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   LiveKitRoom,
+  RoomAudioRenderer,
   useLocalParticipant,
   useParticipants,
   useTracks,
@@ -29,14 +30,15 @@ const AudioRoomControls: React.FC<{ onLeave: () => void }> = ({ onLeave }) => {
 
   useEffect(() => {
     if (localParticipant) {
-      setIsMuted(localParticipant.isMicrophoneEnabled === false);
+      setIsMuted(!localParticipant.isMicrophoneEnabled);
     }
-  }, [localParticipant]);
+  }, [localParticipant, localParticipant?.isMicrophoneEnabled]);
 
   const toggleMute = async () => {
     if (localParticipant) {
-      await localParticipant.setMicrophoneEnabled(isMuted);
-      setIsMuted(!isMuted);
+      const newEnabled = !localParticipant.isMicrophoneEnabled;
+      await localParticipant.setMicrophoneEnabled(newEnabled);
+      setIsMuted(!newEnabled);
     }
   };
 
@@ -161,17 +163,19 @@ const AudioChat: React.FC<AudioChatProps> = ({ client }) => {
 
   return (
     <div className="audio-chat-container">
-      {tokens.map((token, index) => (
+      {tokens.map((token) => (
         <LiveKitRoom
-          key={index}
+          key={token}
           video={false}
-          audio={true}
+          audio={false}
           token={token}
           serverUrl={serverUrl}
           connect={true}
           onDisconnected={() => client.emit("livekitLeave", token)}
+          onError={(err) => console.error("[LiveKit] Error:", err)}
           data-lk-theme="default"
         >
+          <RoomAudioRenderer />
           <AudioRoomControls onLeave={() => client.emit("livekitLeave", token)} />
         </LiveKitRoom>
       ))}
