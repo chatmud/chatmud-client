@@ -269,6 +269,17 @@ const SpeechTab: React.FC = () => {
 
 const SoundsTab: React.FC = () => {
   const [state, dispatch] = usePreferences();
+  const tagVolumes = state.sound.tagVolumes || {};
+
+  const setTagVolume = (tag: string, volume: number) => {
+    dispatch({
+      type: PrefActionType.SetSound,
+      data: {
+        ...state.sound,
+        tagVolumes: { ...tagVolumes, [tag]: volume },
+      },
+    });
+  };
 
   return (
     <div>
@@ -285,6 +296,23 @@ const SoundsTab: React.FC = () => {
         />
         Mute sounds when in background
       </label>
+      {Object.keys(tagVolumes).length > 0 && (
+        <fieldset style={{ marginTop: "1em" }}>
+          <legend>Tag Volumes</legend>
+          {Object.entries(tagVolumes).map(([tag, volume]) => (
+            <label key={tag} style={{ display: "block", marginBottom: "0.5em" }}>
+              {tag}: {Math.round(volume * 100)}%
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume * 100}
+                onChange={(e) => setTagVolume(tag, Number(e.target.value) / 100)}
+              />
+            </label>
+          ))}
+        </fieldset>
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { Playback, Position, Sound, SoundType } from "cacophony";
 
 import { GMCPMessage, GMCPPackage } from "../package";
+import { preferencesStore, PrefActionType } from "../../PreferencesStore";
 
 const CORS_PROXY = "https://mongoose.world:9080/?url=";
 
@@ -107,9 +108,26 @@ export class GMCPClientMedia extends GMCPPackage {
       }
     }
 
-    // Update volume if provided
+    // Update volume if provided, applying per-tag volume multiplier
     if (data.volume !== undefined) {
-      sound.volume = data.volume / 100;
+      let vol = data.volume / 100;
+      if (data.tag) {
+        const soundPrefs = preferencesStore.getState().sound;
+        const tagVol = soundPrefs.tagVolumes[data.tag];
+        if (tagVol !== undefined) {
+          vol *= tagVol;
+        } else {
+          // Auto-register new tags with default volume
+          preferencesStore.dispatch({
+            type: PrefActionType.SetSound,
+            data: {
+              ...soundPrefs,
+              tagVolumes: { ...soundPrefs.tagVolumes, [data.tag]: 1.0 },
+            },
+          });
+        }
+      }
+      sound.volume = vol;
     }
 
     // Update looping if provided
@@ -163,6 +181,9 @@ export class GMCPClientMedia extends GMCPPackage {
       }
     }
     sound.key = data.key;
+    if (data.tag) {
+      sound.tag = data.tag;
+    }
     this.sounds[sound.key] = sound;
 
     // Track looping sounds so they can be resumed after reconnect
