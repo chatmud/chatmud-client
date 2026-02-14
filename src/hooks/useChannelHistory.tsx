@@ -520,14 +520,14 @@ export const useChannelHistory = (client: MudClient | null) => {
       }
 
       // Alt+Space: Repeat current message
-      if (e.altKey && !e.shiftKey && e.code === "Space") {
+      if (e.altKey && !e.shiftKey && e.key === " ") {
         e.preventDefault();
         navigateMessage(0);
         return;
       }
 
       // Alt+Shift+Space: Copy current message
-      if (e.altKey && e.shiftKey && e.code === "Space") {
+      if (e.altKey && e.shiftKey && e.key === " ") {
         e.preventDefault();
         copyCurrentMessage();
         return;

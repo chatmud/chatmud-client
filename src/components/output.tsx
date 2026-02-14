@@ -708,6 +708,17 @@ scrollToBottom = () => { const output = this.outputRef.current; if (output) {
       return;
     }
 
+    // Suppress Alt+Arrow and Alt+Space so browser defaults
+    // don't interfere with app-level keybindings
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.altKey) {
+      e.preventDefault();
+      return;
+    }
+    if (e.altKey && e.code === 'Space') {
+      e.preventDefault();
+      return;
+    }
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();

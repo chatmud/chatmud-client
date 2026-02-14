@@ -202,12 +202,16 @@ const CommandInput = ({ onSend, inputRef, client }: Props) => {
     } else if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
-    } else if (e.key === "ArrowUp" && !e.altKey) {
+    } else if ((e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") && e.altKey) {
+      e.preventDefault();
+    } else if (e.altKey && e.code === "Space") {
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
       e.preventDefault();
       const prevCommand = commandHistory.navigateUp(currentInputText);
       setInputText(prevCommand);
       resetCompletionState();
-    } else if (e.key === "ArrowDown" && !e.altKey) {
+    } else if (e.key === "ArrowDown") {
       e.preventDefault();
       const nextCommand = commandHistory.navigateDown(currentInputText);
       setInputText(nextCommand);
