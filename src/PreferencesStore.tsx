@@ -19,6 +19,7 @@ export type SpeechPreferences = {
 export type SoundPreferences = {
   muteInBackground: boolean;
   volume: number;
+  tagVolumes: { [tag: string]: number };
 };
 
 export type ChannelPreferences = {
@@ -153,7 +154,8 @@ class PreferencesStore {
       },
       sound: {
         muteInBackground: false,
-        volume: 1.0,
+        volume: 0.5,
+        tagVolumes: {},
       },
       channels: {
         "sayto": {
