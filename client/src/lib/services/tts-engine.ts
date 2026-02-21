@@ -11,17 +11,26 @@ import { preferencesState } from '../state/preferences.svelte';
 class TtsEngine {
   private queue: string[] = [];
   private speaking = false;
+  private loadVoicesBound: (() => void) | null = null;
 
   init(): void {
     if ('speechSynthesis' in window) {
       ttsState.available = true;
       // Load voices (may be async on some browsers)
-      const loadVoices = () => {
+      this.loadVoicesBound = () => {
         ttsState.voices = speechSynthesis.getVoices();
       };
-      loadVoices();
-      speechSynthesis.addEventListener('voiceschanged', loadVoices);
+      this.loadVoicesBound();
+      speechSynthesis.addEventListener('voiceschanged', this.loadVoicesBound);
     }
+  }
+
+  destroy(): void {
+    if (this.loadVoicesBound) {
+      speechSynthesis.removeEventListener('voiceschanged', this.loadVoicesBound);
+      this.loadVoicesBound = null;
+    }
+    this.cancel();
   }
 
   speakLine(text: string): void {
