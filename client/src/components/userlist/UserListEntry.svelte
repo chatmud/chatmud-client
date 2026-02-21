@@ -6,16 +6,20 @@
     user,
     selected = false,
     iconName = '',
+    onclick,
   } = $props<{
     user: UserlistEntry;
     selected: boolean;
     iconName: string;
+    onclick?: () => void;
   }>();
 
   const isFriend = $derived(userlistState.friends.includes(user.objectNumber));
   const isYou = $derived(userlistState.you === user.objectNumber);
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_interactive_supports_focus -->
 <div
   class="user-entry"
   class:user-entry-selected={selected}
@@ -26,6 +30,7 @@
   aria-selected={selected}
   id="user-entry-{user.objectNumber}"
   data-object-number={user.objectNumber}
+  {onclick}
 >
   {#if iconName}
     <span class="user-icon" aria-label="Icon: {iconName}" title={iconName}>

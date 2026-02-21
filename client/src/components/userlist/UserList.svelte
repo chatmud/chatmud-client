@@ -93,14 +93,12 @@
 >
   {#if users.length > 0}
     {#each users as user, i (user.objectNumber)}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div onclick={() => handleEntryClick(i)}>
-        <UserListEntry
-          {user}
-          selected={selectedIndex === i}
-          iconName={iconNameFor(user.icon)}
-        />
-      </div>
+      <UserListEntry
+        {user}
+        selected={selectedIndex === i}
+        iconName={iconNameFor(user.icon)}
+        onclick={() => handleEntryClick(i)}
+      />
     {/each}
   {:else}
     <div class="user-list-empty" role="status">
