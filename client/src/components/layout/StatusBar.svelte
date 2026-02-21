@@ -65,7 +65,7 @@
     justify-content: space-between;
     height: var(--statusbar-height);
     padding: 0 12px;
-    background-color: var(--brand-dark);
+    background-color: #0e5c9e;
     font-size: 11px;
     color: rgba(255, 255, 255, 0.8);
     flex-shrink: 0;
