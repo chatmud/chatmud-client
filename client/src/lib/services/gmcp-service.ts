@@ -10,19 +10,32 @@ import type {
 class GmcpService {
   // Called by telnet-negotiator when a GMCP subnegotiation is received
   handleMessage(module: string, data: unknown): void {
+    if (typeof data !== 'object' || data === null) {
+      gmcpState.updateModule(module, data);
+      return;
+    }
+
+    const obj = data as Record<string, unknown>;
+
     // Route Client.Media messages to media service
     switch (module) {
       case 'Client.Media.Default':
-        mediaService.handleDefault(data as MediaDefaultOptions);
+        if (typeof obj.url === 'string') {
+          mediaService.handleDefault(obj as unknown as MediaDefaultOptions);
+        }
         return;
       case 'Client.Media.Load':
-        mediaService.handleLoad(data as MediaLoadOptions);
+        if (typeof obj.name === 'string') {
+          mediaService.handleLoad(obj as unknown as MediaLoadOptions);
+        }
         return;
       case 'Client.Media.Play':
-        mediaService.handlePlay(data as MediaPlayOptions);
+        if (typeof obj.name === 'string') {
+          mediaService.handlePlay(obj as unknown as MediaPlayOptions);
+        }
         return;
       case 'Client.Media.Stop':
-        mediaService.handleStop(data as MediaStopOptions);
+        mediaService.handleStop(obj as unknown as MediaStopOptions);
         return;
     }
 
