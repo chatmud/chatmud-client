@@ -42,6 +42,7 @@ export function getDefaultPreferences(): PreferencesSchema {
       rate: 1,
       pitch: 1,
       volume: 1,
+      activationMode: 'always',
       interruptOnNew: false,
       filterRules: [],
     },

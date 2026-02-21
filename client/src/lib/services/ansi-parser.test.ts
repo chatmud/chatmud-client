@@ -1,5 +1,5 @@
 import { AnsiParser, defaultAnsiState } from './ansi-parser';
-import type { AnsiState, OutputSpan } from '../types/output';
+import type { AnsiState } from '../types/output';
 
 /** Shorthand to build an expected default style object */
 function defaults(overrides: Partial<AnsiState> = {}): AnsiState {

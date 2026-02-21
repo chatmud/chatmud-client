@@ -9,7 +9,7 @@ import { mcpService } from '../mcp-service';
 import { CLIENT_NAME, CLIENT_VERSION } from '../../constants';
 
 export function registerClientPackage(): void {
-  mcpService.registerHandler('dns-com-vmoo-client-disconnect', (msg) => {
+  mcpService.registerHandler('dns-com-vmoo-client-disconnect', (_msg) => {
     // The server is about to disconnect us and is telling us not to auto-reconnect.
     // The actual disconnection handling is done by the connection manager.
   });
