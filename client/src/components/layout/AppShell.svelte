@@ -237,6 +237,8 @@
     grid-row: 1;
     overflow: hidden;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .bottom-bar {

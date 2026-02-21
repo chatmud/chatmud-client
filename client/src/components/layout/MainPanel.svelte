@@ -13,5 +13,6 @@
     overflow: hidden;
     background-color: var(--bg-primary);
     min-width: 0;
+    height: 100%;
   }
 </style>

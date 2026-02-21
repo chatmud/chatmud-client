@@ -75,8 +75,7 @@
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    min-width: 320px;
-    max-width: 600px;
+    width: min(560px, 90vw);
     max-height: 80vh;
     display: flex;
     flex-direction: column;
