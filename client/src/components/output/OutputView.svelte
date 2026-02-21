@@ -4,6 +4,10 @@
   import OutputLine from './OutputLine.svelte';
 
   let container: HTMLElement | undefined = $state(undefined);
+  let lineCountWhenUnlocked = $state(0);
+  let newLineCount = $derived(
+    outputState.scrollLocked ? 0 : Math.max(0, outputState.lines.length - lineCountWhenUnlocked)
+  );
 
   function scrollToBottom() {
     if (container) {
@@ -18,7 +22,12 @@
   }
 
   function handleScroll() {
-    outputState.scrollLocked = isAtBottom();
+    const wasLocked = outputState.scrollLocked;
+    const nowLocked = isAtBottom();
+    outputState.scrollLocked = nowLocked;
+    if (wasLocked && !nowLocked) {
+      lineCountWhenUnlocked = outputState.lines.length;
+    }
   }
 
   $effect(() => {
@@ -38,7 +47,9 @@
 <div
   id="output-region"
   class="output-view"
-  aria-label="Game output"
+  role="log"
+  aria-label="Output"
+  aria-live="off"
   bind:this={container}
   onscroll={handleScroll}
 >
@@ -58,8 +69,11 @@
     <button
       class="scroll-to-bottom"
       onclick={() => { outputState.scrollLocked = true; scrollToBottom(); }}
-      aria-label="Scroll to bottom"
+      aria-label={newLineCount > 0 ? `Scroll to bottom, ${newLineCount} new lines` : 'Scroll to bottom'}
     >
+      {#if newLineCount > 0}
+        <span class="new-line-badge">{newLineCount > 99 ? '99+' : newLineCount}</span>
+      {/if}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z"/></svg>
     </button>
   {/if}
@@ -111,15 +125,16 @@
   .scroll-to-bottom {
     position: sticky;
     bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    gap: 2px;
+    min-width: 32px;
+    height: auto;
+    padding: 4px 8px;
     border: 1px solid var(--border-subtle);
-    border-radius: 50%;
+    border-radius: 16px;
     background-color: var(--bg-elevated);
     color: var(--text-secondary);
     cursor: pointer;
@@ -130,6 +145,18 @@
 
   .scroll-to-bottom:hover {
     background-color: var(--accent-muted);
+    color: var(--accent);
+  }
+
+  .new-line-badge {
+    font-size: 10px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .scroll-to-bottom:hover .new-line-badge {
     color: var(--accent);
   }
 
