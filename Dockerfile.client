@@ -1,0 +1,14 @@
+# Stage 1: Build client (Svelte/Vite → static assets)
+FROM node:22-alpine AS build
+WORKDIR /build/client
+COPY client/package.json client/package-lock.json ./
+RUN npm ci
+COPY client/ ./
+RUN npm run build
+# Output lands in /build/proxy/public/ (vite outDir: ../proxy/public)
+
+# Stage 2: Runtime (nginx)
+FROM nginx:alpine
+COPY --from=build /build/proxy/public/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
