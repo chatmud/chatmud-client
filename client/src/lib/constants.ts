@@ -51,7 +51,7 @@ export const MCP_MULTILINE_END_PREFIX = '#$#:';
 export const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
 
 // Output buffer defaults
-export const DEFAULT_MAX_OUTPUT_LINES = 10000;
+export const DEFAULT_MAX_OUTPUT_LINES = 1000;
 
 // GMCP modules we support
 export const GMCP_SUPPORTED_MODULES = [

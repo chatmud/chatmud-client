@@ -1,49 +1,24 @@
 <script lang="ts">
   import { preferencesState } from '../../lib/state/preferences.svelte';
 
+  const timeoutOptions = [
+    { label: '1 minute', value: 60000 },
+    { label: '5 minutes', value: 300000 },
+    { label: '10 minutes', value: 600000 },
+    { label: '30 minutes', value: 1800000 },
+    { label: '1 hour', value: 3600000 },
+    { label: '3 hours', value: 10800000 },
+    { label: '6 hours', value: 21600000 },
+    { label: '12 hours', value: 43200000 },
+  ];
+
   let persistenceTimeout = $state(preferencesState.proxy.persistenceTimeout);
-  let maxBufferLines = $state(preferencesState.proxy.maxBufferLines);
-
-  /**
-   * Format milliseconds into a human-readable duration string.
-   */
-  function formatDuration(ms: number): string {
-    if (ms === 0) return 'Disabled';
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      const remainingMinutes = minutes % 60;
-      return remainingMinutes > 0
-        ? `${hours}h ${remainingMinutes}m`
-        : `${hours}h`;
-    }
-    if (minutes > 0) {
-      const remainingSeconds = seconds % 60;
-      return remainingSeconds > 0
-        ? `${minutes}m ${remainingSeconds}s`
-        : `${minutes}m`;
-    }
-    return `${seconds}s`;
-  }
 
   function handleTimeoutChange(event: Event): void {
-    const target = event.target as HTMLInputElement;
+    const target = event.target as HTMLSelectElement;
     const value = parseInt(target.value, 10);
-    if (value >= 0 && value <= 43200000) {
-      persistenceTimeout = value;
-      preferencesState.updateProxy({ persistenceTimeout: value });
-    }
-  }
-
-  function handleBufferChange(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const value = parseInt(target.value, 10);
-    if (value >= 10 && value <= 10000) {
-      maxBufferLines = value;
-      preferencesState.updateProxy({ maxBufferLines: value });
-    }
+    persistenceTimeout = value;
+    preferencesState.updateProxy({ persistenceTimeout: value });
   }
 </script>
 
@@ -52,34 +27,19 @@
 
   <div class="setting-row">
     <label class="setting-label" for="persistence-timeout">
-      Persistence Timeout
-      <span class="setting-hint">{formatDuration(persistenceTimeout)}</span>
+      Session Persistence
+      <span class="setting-hint">How long the server keeps your session alive after you navigate away or unexpectedly lose connection</span>
     </label>
-    <input
+    <select
       id="persistence-timeout"
       class="setting-input"
-      type="number"
-      min="0"
-      max="43200000"
-      step="60000"
-      value={persistenceTimeout}
+      value={String(persistenceTimeout)}
       onchange={handleTimeoutChange}
-    />
-    <span class="setting-unit">ms</span>
-  </div>
-
-  <div class="setting-row">
-    <label class="setting-label" for="max-buffer">Max Buffer Lines</label>
-    <input
-      id="max-buffer"
-      class="setting-input"
-      type="number"
-      min="10"
-      max="10000"
-      step="100"
-      value={maxBufferLines}
-      onchange={handleBufferChange}
-    />
+    >
+      {#each timeoutOptions as opt}
+        <option value={String(opt.value)}>{opt.label}</option>
+      {/each}
+    </select>
   </div>
 </fieldset>
 
@@ -118,6 +78,7 @@
   .setting-hint {
     color: var(--text-muted);
     font-size: 11px;
+    white-space: normal;
   }
 
   .setting-input {
@@ -128,13 +89,7 @@
     border-radius: 4px;
     font-family: var(--font-family);
     font-size: 13px;
-    max-width: 120px;
-  }
-
-  .setting-unit {
-    color: var(--text-muted);
-    font-size: 12px;
-    min-width: 20px;
+    min-width: 120px;
   }
 
   .setting-input:focus-visible {

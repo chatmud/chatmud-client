@@ -27,7 +27,7 @@ export function getDefaultPreferences(): PreferencesSchema {
       ansiOverrides: {},
     },
     proxy: {
-      persistenceTimeout: 300000,
+      persistenceTimeout: 600000,
       maxBufferLines: 1000,
     },
     accessibility: {
@@ -54,7 +54,7 @@ export function getDefaultPreferences(): PreferencesSchema {
     display: {
       autoLinkUrls: true,
       timestamps: false,
-      maxOutputLines: 10000,
+      maxOutputLines: 1000,
       confirmDisplayUrl: true,
     },
   };

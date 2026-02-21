@@ -21,7 +21,7 @@ function getDefaults(): PreferencesSchema {
       lineHeight: 1.4,
     },
     colors: { theme: 'dark', ansiOverrides: {} },
-    proxy: { persistenceTimeout: 300000, maxBufferLines: 1000 },
+    proxy: { persistenceTimeout: 600000, maxBufferLines: 1000 },
     accessibility: {
       verbosity: 'medium',
       batchAnnouncements: true,
@@ -42,7 +42,7 @@ function getDefaults(): PreferencesSchema {
     display: {
       autoLinkUrls: true,
       timestamps: false,
-      maxOutputLines: 10000,
+      maxOutputLines: 1000,
       confirmDisplayUrl: true,
     },
   };
