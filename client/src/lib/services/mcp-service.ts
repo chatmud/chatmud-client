@@ -364,8 +364,6 @@ class McpService {
     const handler = this.messageHandlers.get(msg.name);
     if (handler) {
       handler(msg);
-    } else {
-      console.debug(`[MCP] No handler for message: ${msg.name}`);
     }
   }
 

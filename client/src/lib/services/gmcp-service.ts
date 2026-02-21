@@ -10,9 +10,6 @@ import type {
 class GmcpService {
   // Called by telnet-negotiator when a GMCP subnegotiation is received
   handleMessage(module: string, data: unknown): void {
-    // Log the message for debugging
-    console.log('[GMCP]', module, data);
-
     // Route Client.Media messages to media service
     switch (module) {
       case 'Client.Media.Default':

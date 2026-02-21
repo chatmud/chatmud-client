@@ -10,8 +10,6 @@ import { CLIENT_NAME, CLIENT_VERSION } from '../../constants';
 
 export function registerClientPackage(): void {
   mcpService.registerHandler('dns-com-vmoo-client-disconnect', (msg) => {
-    const reason = msg.keyValues.get('reason');
-    console.log('[MCP] Server requested disconnect:', reason ?? '(no reason given)');
     // The server is about to disconnect us and is telling us not to auto-reconnect.
     // The actual disconnection handling is done by the connection manager.
   });
