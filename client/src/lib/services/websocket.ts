@@ -76,8 +76,8 @@ class WebSocketService {
               this.sessionId = msg.sessionId;
             }
             this.onProxy?.(msg);
-          } catch {
-            // Malformed proxy message, ignore
+          } catch (err) {
+            console.warn('[WS] Malformed proxy message:', err);
           }
         } else {
           // Raw telnet data
