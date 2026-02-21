@@ -50,4 +50,8 @@ export interface ActiveMedia {
   audio: HTMLAudioElement;
   caption?: string;
   fadeoutDuration?: number;
+  /** @internal cleanup callback for timeupdate listener */
+  _cleanupFinish?: () => void;
+  /** @internal cleanup callback for ended listener */
+  _cleanupEnded?: () => void;
 }

@@ -11,6 +11,7 @@ import { generateId } from '../utils/generate-id';
 
 class MediaService {
   private preloadCache = new Map<string, HTMLAudioElement>();
+  private fadeIntervals = new Map<HTMLAudioElement, ReturnType<typeof setInterval>>();
 
   /** Set the default base URL for media files. */
   handleDefault(options: MediaDefaultOptions): void {
@@ -116,22 +117,25 @@ class MediaService {
         }
       };
       audio.addEventListener('timeupdate', checkFinish);
+      activeMedia._cleanupFinish = () => audio!.removeEventListener('timeupdate', checkFinish);
     }
 
     // Handle natural end / looping
-    audio.addEventListener('ended', () => {
+    const onEnded = () => {
       if (activeMedia.loopsRemaining === -1) {
         // Infinite loop
         audio!.currentTime = options.start ? options.start / 1000 : 0;
-        audio!.play().catch(() => {});
+        audio!.play().catch(() => this.handleMediaEnd(activeMedia));
       } else if (activeMedia.loopsRemaining > 1) {
         activeMedia.loopsRemaining--;
         audio!.currentTime = options.start ? options.start / 1000 : 0;
-        audio!.play().catch(() => {});
+        audio!.play().catch(() => this.handleMediaEnd(activeMedia));
       } else {
         this.handleMediaEnd(activeMedia);
       }
-    });
+    };
+    audio.addEventListener('ended', onEnded);
+    activeMedia._cleanupEnded = () => audio!.removeEventListener('ended', onEnded);
 
     mediaState.addMedia(activeMedia);
     audio.play().catch(err => {
@@ -189,14 +193,22 @@ class MediaService {
     return (mediaVolume / 100) * (categoryVolume / 100) * (mediaState.masterVolume / 100);
   }
 
+  private cleanupMedia(media: ActiveMedia): void {
+    media._cleanupFinish?.();
+    media._cleanupEnded?.();
+    this.cancelFade(media.audio);
+  }
+
   private stopSingle(media: ActiveMedia, fadeoutMs?: number): void {
     if (fadeoutMs && fadeoutMs > 0) {
       this.fadeVolume(media.audio, media.audio.volume, 0, fadeoutMs, () => {
+        this.cleanupMedia(media);
         media.audio.pause();
         media.audio.src = '';
         mediaState.removeMedia(media.id);
       });
     } else {
+      this.cleanupMedia(media);
       media.audio.pause();
       media.audio.src = '';
       mediaState.removeMedia(media.id);
@@ -206,12 +218,22 @@ class MediaService {
   private handleMediaEnd(media: ActiveMedia): void {
     if (media.fadeoutDuration && media.fadeoutDuration > 0) {
       this.fadeVolume(media.audio, media.audio.volume, 0, media.fadeoutDuration, () => {
+        this.cleanupMedia(media);
         media.audio.pause();
         mediaState.removeMedia(media.id);
       });
     } else {
+      this.cleanupMedia(media);
       media.audio.pause();
       mediaState.removeMedia(media.id);
+    }
+  }
+
+  private cancelFade(audio: HTMLAudioElement): void {
+    const existing = this.fadeIntervals.get(audio);
+    if (existing) {
+      clearInterval(existing);
+      this.fadeIntervals.delete(audio);
     }
   }
 
@@ -222,6 +244,8 @@ class MediaService {
     durationMs: number,
     onComplete?: () => void,
   ): void {
+    this.cancelFade(audio);
+
     const steps = Math.max(1, Math.floor(durationMs / 50)); // 50ms per step
     const stepSize = (to - from) / steps;
     let step = 0;
@@ -230,12 +254,15 @@ class MediaService {
       step++;
       if (step >= steps) {
         audio.volume = Math.max(0, Math.min(1, to));
+        this.fadeIntervals.delete(audio);
         clearInterval(interval);
         onComplete?.();
       } else {
         audio.volume = Math.max(0, Math.min(1, from + stepSize * step));
       }
     }, 50);
+
+    this.fadeIntervals.set(audio, interval);
   }
 }
 
