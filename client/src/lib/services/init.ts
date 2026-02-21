@@ -27,6 +27,7 @@ import { ttsState } from '../state/tts.svelte';
 let replayLineCount = 0;
 let resumingSession = false;
 let wasConnected = false;
+let suppressionTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function initServices(): void {
   ttsEngine.init();
@@ -111,6 +112,10 @@ export function initServices(): void {
     (msg) => {
       connectionState.handleProxyMessage(msg);
       if (msg.type === 'bufferReplayComplete') {
+        if (suppressionTimer !== null) {
+          clearTimeout(suppressionTimer);
+          suppressionTimer = null;
+        }
         resumingSession = false;
         const count = replayLineCount;
         replayLineCount = 0;
@@ -134,7 +139,11 @@ export function initServices(): void {
           // (e.g. nothing was buffered, or the session was fresh).
           ttsState.suppressed = true;
           replayLineCount = 0;
-          setTimeout(() => {
+          if (suppressionTimer !== null) {
+            clearTimeout(suppressionTimer);
+          }
+          suppressionTimer = setTimeout(() => {
+            suppressionTimer = null;
             if (ttsState.suppressed) {
               resumingSession = false;
               ttsState.suppressed = false;
