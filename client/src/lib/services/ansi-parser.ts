@@ -274,7 +274,7 @@ export class AnsiParser {
     if (mode === 5) {
       // 256-color: 38;5;n
       if (index + 2 >= params.length) {
-        return { color: null, nextIndex: index + 2 };
+        return { color: null, nextIndex: Math.min(index + 3, params.length) };
       }
       const n = params[index + 2];
       return { color: this.color256ToString(n), nextIndex: index + 3 };
@@ -283,7 +283,7 @@ export class AnsiParser {
     if (mode === 2) {
       // Truecolor: 38;2;r;g;b
       if (index + 4 >= params.length) {
-        return { color: null, nextIndex: index + 2 };
+        return { color: null, nextIndex: Math.min(index + 5, params.length) };
       }
       const r = params[index + 2];
       const g = params[index + 3];
