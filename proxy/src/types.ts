@@ -81,7 +81,7 @@ export interface ProxyConfig {
    * How long to keep sessions alive after client disconnect (ms)
    * - 0 = disconnect immediately (close upstream connection right away)
    * - Max: 43200000 (12 hours)
-   * - Default: 300000 (5 minutes)
+   * - Default: 600000 (10 minutes)
    */
   persistenceTimeout: number;
   /**

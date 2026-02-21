@@ -16,7 +16,7 @@ import { MAX_BUFFER_SIZE_BYTES } from "./types.js";
 
 // Configuration limits (same as in index.ts)
 const CONFIG_LIMITS = {
-  PERSISTENCE_TIMEOUT: { MIN: 0, MAX: 43200000, DEFAULT: 300000 },
+  PERSISTENCE_TIMEOUT: { MIN: 0, MAX: 43200000, DEFAULT: 600000 },
   BUFFER_LINES: { MIN: 10, MAX: 10000, DEFAULT: 1000 },
 };
 

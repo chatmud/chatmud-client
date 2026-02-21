@@ -9,7 +9,7 @@ const LIMITS = {
   PERSISTENCE_TIMEOUT: {
     MIN: 0,        // 0 = disconnect immediately
     MAX: 43200000, // 12 hours in milliseconds
-    DEFAULT: 300000 // 5 minutes
+    DEFAULT: 600000 // 10 minutes
   },
   BUFFER_LINES: {
     MIN: 10,
