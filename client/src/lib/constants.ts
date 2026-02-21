@@ -63,9 +63,6 @@ export const GMCP_SUPPORTED_MODULES = [
   'Char.Worth 1',
   'Room.Info 1',
   'Comm.Channel 1',
-  'Comm.Tick 1',
-  'Comm.Quest 1',
-  'Comm.Repop 1',
   'Group 1',
   'Client.Media 1',
 ];
