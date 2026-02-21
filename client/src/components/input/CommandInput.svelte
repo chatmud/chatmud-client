@@ -108,7 +108,7 @@
     font-family: var(--font-family);
     font-size: var(--font-size);
     line-height: var(--line-height);
-    outline: none;
+    outline: none; /* Custom focus style below replaces native outline */
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
   }
 
@@ -122,7 +122,11 @@
   }
 
   .command-input:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .command-input:disabled::placeholder {
+    color: var(--text-secondary);
   }
 </style>
