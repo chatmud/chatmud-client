@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.git/
+.claude/
+docs/
+*.md
+.gitignore
+.dockerignore
+docker-compose.yml
+proxy/public/

@@ -1,0 +1,11 @@
+services:
+  chatmud:
+    build: .
+    ports:
+      - "${PORT:-3001}:${PORT:-3001}"
+    environment:
+      - PORT=${PORT:-3001}
+      - UPSTREAM_URL=${UPSTREAM_URL:-}
+      - PERSISTENCE_TIMEOUT_MS=${PERSISTENCE_TIMEOUT_MS:-}
+      - MAX_BUFFER_LINES=${MAX_BUFFER_LINES:-}
+      - USE_PROXY_PROTOCOL=${USE_PROXY_PROTOCOL:-}
