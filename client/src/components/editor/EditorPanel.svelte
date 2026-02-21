@@ -190,6 +190,13 @@
   let isOpen = $derived(uiState.editorOpen && editorState.hasOpenSessions);
 
   function handleClose() {
+    const session = editorState.activeSession;
+    if (session?.dirty) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to close the editor?'
+      );
+      if (!confirmed) return;
+    }
     uiState.editorOpen = false;
   }
 
