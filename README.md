@@ -69,10 +69,13 @@ Static files end up in `client/dist/`.
 
 The client negotiates these [GMCP](https://www.gammon.com.au/gmcp) packages:
 
-| Package | Used for |
+| Package | What we do with it |
 |---|---|
-| `Room.Info` | Room name, area, and exits shown in the sidebar |
-| `Comm.Channel` | Channel message history with buffer switching |
+| `Char` | Store character name; vitals/status/skills received but not displayed |
+| `Char.Items` | Track inventory and room items (add/remove/update) |
+| `Char.Login` | Receive login method advertisement and auth results |
+| `Room` | Room name, area, exits in the sidebar; player enter/leave tracking |
+| `Comm.Channel` | Channel message history with buffer switching; channel list |
 | `Client.Media` | Sound/music playback via Web Audio (volume, fading, looping, priority) |
 
 ## Project layout
