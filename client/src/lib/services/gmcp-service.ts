@@ -1,4 +1,5 @@
 import { gmcpState } from '../state/gmcp.svelte';
+import { channelHistoryState } from '../state/channel-history.svelte';
 import { mediaService } from './media-service';
 import type {
   MediaDefaultOptions,
@@ -17,8 +18,16 @@ class GmcpService {
 
     const obj = data as Record<string, unknown>;
 
-    // Route Client.Media messages to media service
+    // Route channel text to channel history buffers
     switch (module) {
+      case 'Comm.Channel.Text': {
+        const { channel, talker, text } = obj as { channel: string; talker: string; text: string };
+        if (channel && text) {
+          channelHistoryState.addChannelMessage(channel, talker || '', text);
+        }
+        // Fall through to update gmcpState as well
+        break;
+      }
       case 'Client.Media.Default':
         if (typeof obj.url === 'string') {
           mediaService.handleDefault(obj as unknown as MediaDefaultOptions);

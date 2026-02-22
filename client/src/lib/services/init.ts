@@ -23,6 +23,7 @@ import { registerUserlistPackage } from './mcp-packages/userlist';
 import { registerClientPackage } from './mcp-packages/client';
 import { ttsEngine } from './tts-engine';
 import { ttsState } from '../state/tts.svelte';
+import { channelHistoryState } from '../state/channel-history.svelte';
 
 let replayLineCount = 0;
 let resumingSession = false;
@@ -31,6 +32,7 @@ let suppressionTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function initServices(): void {
   ttsEngine.init();
+  channelHistoryState.setupKeyboardHandler();
   const telnetParser = new TelnetParser();
   const outputProcessor = new OutputProcessor();
   const telnetNegotiator = new TelnetNegotiator(
