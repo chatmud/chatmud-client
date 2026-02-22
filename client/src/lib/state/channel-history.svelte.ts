@@ -470,12 +470,14 @@ class ChannelHistoryState {
       // Alt+Home/End: Navigate to start/end
       if (e.altKey && e.key === 'Home') {
         e.preventDefault();
-        this.navigateMessage(-2000);
+        const buf = this.getCurrentBuffer();
+        this.navigateMessage(buf ? -buf.messages.length : -1);
         return;
       }
       if (e.altKey && e.key === 'End') {
         e.preventDefault();
-        this.navigateMessage(2000);
+        const buf = this.getCurrentBuffer();
+        this.navigateMessage(buf ? buf.messages.length : 1);
         return;
       }
 
