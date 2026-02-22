@@ -2,17 +2,6 @@ import type { OutputLine, AnsiState } from '../types/output';
 import { DEFAULT_MAX_OUTPUT_LINES } from '../constants';
 import { ttsEngine } from '../services/tts-engine';
 import { ttsState } from './tts.svelte';
-// Lazy import to avoid circular dependency — channel-history imports outputState
-let _channelHistoryState: typeof import('./channel-history.svelte').channelHistoryState | null = null;
-function getChannelHistory() {
-  if (!_channelHistoryState) {
-    // Dynamic import resolved synchronously after first load
-    import('./channel-history.svelte').then((m) => {
-      _channelHistoryState = m.channelHistoryState;
-    });
-  }
-  return _channelHistoryState;
-}
 
 const STORAGE_KEY = 'chatmud-output';
 const SAVE_DEBOUNCE_MS = 500;
@@ -38,9 +27,15 @@ class OutputState {
 
   private nextLineId = 0;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private onNewMessage: ((text: string) => void) | null = null;
 
   constructor() {
     this.loadFromStorage();
+  }
+
+  /** Register a callback invoked for each non-empty text line added to output. */
+  registerMessageCallback(callback: (text: string) => void): void {
+    this.onNewMessage = callback;
   }
 
   addLines(newLines: OutputLine[]): void {
@@ -52,24 +47,15 @@ class OutputState {
     if (this.lines.length > this.maxLines) {
       this.lines = this.lines.slice(-this.maxLines);
     }
-    // Collect plain text for screen reader announcements and TTS
-    // Skip during buffer replay to avoid flooding
-    const ch = getChannelHistory();
-    if (!ttsState.suppressed) {
-      for (const line of newLines) {
-        const text = line.spans.map((s) => s.text).join('');
-        if (text.length > 0) {
+    // Collect plain text for screen reader announcements, TTS, and channel history
+    for (const line of newLines) {
+      const text = line.spans.map((s) => s.text).join('');
+      if (text.length > 0) {
+        if (!ttsState.suppressed) {
           this.pendingAnnouncementText = [...this.pendingAnnouncementText, text];
           ttsEngine.speakLine(text);
-          ch?.addMessage(text);
         }
-      }
-    } else if (ch) {
-      for (const line of newLines) {
-        const text = line.spans.map((s) => s.text).join('');
-        if (text.length > 0) {
-          ch.addMessage(text);
-        }
+        this.onNewMessage?.(text);
       }
     }
     this.debouncedSave();

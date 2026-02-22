@@ -515,3 +515,8 @@ class ChannelHistoryState {
 }
 
 export const channelHistoryState = new ChannelHistoryState();
+
+// Register with outputState to receive all incoming text lines
+outputState.registerMessageCallback((text: string) => {
+  channelHistoryState.addMessage(text);
+});
