@@ -180,6 +180,9 @@ class MediaService {
       pb.fadeOut({ duration: fadeoutMs }).then(() => {
         pb.stop();
         mediaState.removeMedia(media.id);
+      }).catch(() => {
+        pb.stop();
+        mediaState.removeMedia(media.id);
       });
     } else {
       pb.stop();
