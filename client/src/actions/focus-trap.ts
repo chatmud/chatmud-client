@@ -47,6 +47,9 @@ export function focusTrap(node: HTMLElement) {
     }
   }
 
+  // Remember what had focus before the trap opened
+  const previouslyFocused = document.activeElement as HTMLElement | null;
+
   // Focus the first focusable element on mount
   const focusable = getFocusableElements();
   if (focusable.length > 0) {
@@ -58,6 +61,7 @@ export function focusTrap(node: HTMLElement) {
   return {
     destroy() {
       node.removeEventListener('keydown', handleKeydown);
+      previouslyFocused?.focus();
     },
   };
 }
