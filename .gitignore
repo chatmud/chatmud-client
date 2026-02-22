@@ -1,7 +1,6 @@
 node_modules/
 dist/
 client/dist/
-docs/
 *.local
 .env
 .DS_Store
