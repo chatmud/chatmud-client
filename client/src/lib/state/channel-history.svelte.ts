@@ -4,7 +4,7 @@ import { outputState } from './output.svelte';
 
 // --- Types ---
 
-interface ChannelMessage {
+export interface ChannelMessage {
   id: number;
   message: string;
   timestamp: number;
@@ -12,7 +12,7 @@ interface ChannelMessage {
   talker?: string;
 }
 
-interface ChannelBuffer {
+export interface ChannelBuffer {
   name: string;
   messages: ChannelMessage[];
   currentIndex: number;
@@ -20,7 +20,7 @@ interface ChannelBuffer {
 
 // --- Navigation key maps ---
 
-const navigationKeyMaps: Record<
+export const navigationKeyMaps: Record<
   NavigationKeyScheme,
   { up: string; down: string; left: string; right: string }
 > = {
@@ -31,7 +31,7 @@ const navigationKeyMaps: Record<
 };
 
 /** Match a key event against a navigation key, using e.code as fallback for macOS Option+letter */
-function matchesNavKey(e: KeyboardEvent, navKey: string): boolean {
+export function matchesNavKey(e: KeyboardEvent, navKey: string): boolean {
   if (e.key.toLowerCase() === navKey) return true;
   if (navKey === ',') return e.code === 'Comma';
   if (navKey.length === 1) return e.code === `Key${navKey.toUpperCase()}`;
@@ -39,7 +39,7 @@ function matchesNavKey(e: KeyboardEvent, navKey: string): boolean {
 }
 
 /** Extract digit 0-9 from a key event, using e.code as fallback for macOS Option+number */
-function getDigit(e: KeyboardEvent): number | null {
+export function getDigit(e: KeyboardEvent): number | null {
   const fromKey = parseInt(e.key);
   if (!isNaN(fromKey) && fromKey >= 0 && fromKey <= 9) return fromKey;
   const match = e.code.match(/^Digit(\d)$/);
