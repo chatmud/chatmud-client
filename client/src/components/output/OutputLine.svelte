@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { OutputLine } from '../../lib/types/output';
 
-  let { line } = $props<{ line: OutputLine }>();
+  let { line, focused = false, index = 0 } = $props<{ line: OutputLine; focused?: boolean; index?: number }>();
 
   /**
    * Convert an AnsiState into a CSS style string.
@@ -38,7 +38,7 @@
   }
 </script>
 
-<div class="output-line" class:system-line={line.isSystem} data-line-id={line.id}>
+<div class="output-line" class:system-line={line.isSystem} class:focused-line={focused} data-line-id={line.id} data-line-index={index}>
   {#each line.spans as span, i (i)}
     {@const style = spanStyle(span.style)}
     {#if style}
@@ -57,10 +57,18 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     min-height: 1em;
+    transition: background-color 0.1s ease;
+    scroll-margin: 20px;
   }
 
   .system-line {
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .focused-line {
+    background-color: rgba(66, 135, 245, 0.15);
+    outline: 1px solid rgba(66, 135, 245, 0.3);
+    outline-offset: -1px;
   }
 </style>

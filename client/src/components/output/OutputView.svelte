@@ -4,6 +4,7 @@
   import OutputLine from './OutputLine.svelte';
 
   let container: HTMLElement | undefined = $state(undefined);
+  let focusedLineIndex: number | null = $state(null);
   let lineCountWhenUnlocked = $state(0);
   let newLineCount = $derived(
     outputState.scrollLocked ? 0 : Math.max(0, outputState.lines.length - lineCountWhenUnlocked)
@@ -42,16 +43,106 @@
   });
 
   let showWelcome = $derived(outputState.lines.length === 0 && !connectionState.isConnected);
+
+  function announceOutputLine(lineIndex: number): void {
+    const line = outputState.lines[lineIndex];
+    if (!line) return;
+    const text = line.spans.map((s) => s.text).join('');
+    if (text.length > 0) {
+      outputState.announce(text);
+    }
+  }
+
+  function scrollFocusedLineIntoView(index: number): void {
+    if (!container) return;
+    const el = container.querySelector(`[data-line-index="${index}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  /** Suppress Alt+key combinations used by channel history */
+  function isChannelHistoryKey(e: KeyboardEvent): boolean {
+    if (!e.altKey) return false;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return true;
+    const navLetters = new Set(['i', 'j', 'k', 'l', 'w', 'a', 's', 'd', 'c', 'h', 't', 'n', 'o', 'e', ',']);
+    if (navLetters.has(e.key.toLowerCase())) return true;
+    const codeMatch = e.code.match(/^Key([A-Z])$/);
+    if (codeMatch && navLetters.has(codeMatch[1].toLowerCase())) return true;
+    if (e.code === 'Comma') return true;
+    if (e.key === ' ') return true;
+    if (/^Digit\d$/.test(e.code) || /^\d$/.test(e.key)) return true;
+    if (['PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) return true;
+    if (e.key === 'Delete') return true;
+    return false;
+  }
+
+  function handleOutputKeyDown(e: KeyboardEvent): void {
+    // Let Alt+key combos pass through to global handler
+    if (isChannelHistoryKey(e)) return;
+
+    const lineCount = outputState.lines.length;
+    if (lineCount === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault();
+        if (focusedLineIndex === null) {
+          focusedLineIndex = lineCount - 1;
+        } else if (focusedLineIndex < lineCount - 1) {
+          focusedLineIndex++;
+        }
+        announceOutputLine(focusedLineIndex);
+        scrollFocusedLineIntoView(focusedLineIndex);
+        break;
+      }
+      case 'ArrowUp': {
+        e.preventDefault();
+        if (focusedLineIndex === null) {
+          focusedLineIndex = lineCount - 1;
+        } else if (focusedLineIndex > 0) {
+          focusedLineIndex--;
+        }
+        announceOutputLine(focusedLineIndex);
+        scrollFocusedLineIntoView(focusedLineIndex);
+        break;
+      }
+      case 'Home': {
+        e.preventDefault();
+        focusedLineIndex = 0;
+        announceOutputLine(focusedLineIndex);
+        scrollFocusedLineIntoView(focusedLineIndex);
+        break;
+      }
+      case 'End': {
+        e.preventDefault();
+        focusedLineIndex = lineCount - 1;
+        announceOutputLine(focusedLineIndex);
+        scrollFocusedLineIntoView(focusedLineIndex);
+        break;
+      }
+    }
+  }
+
+  function handleOutputFocus(): void {
+    if (focusedLineIndex === null && outputState.lines.length > 0) {
+      focusedLineIndex = outputState.lines.length - 1;
+    }
+  }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
 <div
   id="output-region"
   class="output-view"
   role="log"
   aria-label="Output"
   aria-live="off"
+  tabindex={0}
   bind:this={container}
   onscroll={handleScroll}
+  onkeydown={handleOutputKeyDown}
+  onfocus={handleOutputFocus}
 >
   {#if showWelcome}
     <div class="welcome">
@@ -60,8 +151,8 @@
       <p class="welcome-sub">Click <strong>Connect</strong> to begin your adventure</p>
     </div>
   {:else}
-    {#each outputState.lines as line (line.id)}
-      <OutputLine {line} />
+    {#each outputState.lines as line, index (line.id)}
+      <OutputLine {line} focused={focusedLineIndex === index} {index} />
     {/each}
   {/if}
 
@@ -92,6 +183,11 @@
     font-size: var(--font-size);
     line-height: var(--line-height);
     position: relative;
+    outline: none;
+  }
+
+  .output-view:focus {
+    box-shadow: inset 0 0 0 2px var(--accent-muted);
   }
 
   .welcome {
