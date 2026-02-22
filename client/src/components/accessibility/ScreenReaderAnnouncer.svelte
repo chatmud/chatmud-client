@@ -4,13 +4,10 @@
 
   let liveEl: HTMLDivElement | null = null;
   let containerEl: HTMLDivElement | undefined = $state(undefined);
-  let bufferTimer: ReturnType<typeof setTimeout> | null = null;
   let clearTimer: ReturnType<typeof setTimeout> | null = null;
   let textBuffer = '';
 
-  const BUFFER_DELAY = 250;
   const CLEAR_DELAY = 1000;
-  const MAX_BUFFER = 1000;
 
   onMount(() => {
     if (!containerEl) return;
@@ -26,7 +23,6 @@
   });
 
   onDestroy(() => {
-    if (bufferTimer !== null) clearTimeout(bufferTimer);
     if (clearTimer !== null) clearTimeout(clearTimer);
     if (liveEl?.parentNode) liveEl.parentNode.removeChild(liveEl);
     liveEl = null;
@@ -35,10 +31,6 @@
   function flush(): void {
     if (!liveEl || !textBuffer.trim()) return;
 
-    if (bufferTimer !== null) {
-      clearTimeout(bufferTimer);
-      bufferTimer = null;
-    }
     if (clearTimer !== null) {
       clearTimeout(clearTimer);
       clearTimer = null;
@@ -62,15 +54,7 @@
       textBuffer += (textBuffer ? ' ' : '') + text;
     }
 
-    if (textBuffer.length > MAX_BUFFER) {
-      flush();
-      return;
-    }
-
-    if (bufferTimer !== null) {
-      clearTimeout(bufferTimer);
-    }
-    bufferTimer = setTimeout(flush, BUFFER_DELAY);
+    flush();
   });
 </script>
 
