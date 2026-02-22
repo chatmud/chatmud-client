@@ -10,7 +10,9 @@ RUN npm ci --omit=dev
 
 # Stage 2: Runtime
 FROM node:22-alpine AS runtime
+ARG COMMIT_SHA=dev
 ENV NODE_ENV=production
+ENV COMMIT_SHA=${COMMIT_SHA}
 WORKDIR /app
 COPY --from=proxy-build /build/proxy/dist/ ./dist/
 COPY --from=proxy-build /build/proxy/node_modules/ ./node_modules/

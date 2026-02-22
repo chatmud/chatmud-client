@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.client
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-dev}
     ports:
       - "${PORT:-3001}:80"
     depends_on:
@@ -12,6 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-dev}
     expose:
       - "3001"
     environment:

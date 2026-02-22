@@ -1,8 +1,25 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+
+function getGitCommit(): string {
+  if (process.env.VITE_COMMIT_SHA) return process.env.VITE_COMMIT_SHA;
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __GIT_COMMIT__: JSON.stringify(getGitCommit()),
+  },
   plugins: [
     svelte(),
     VitePWA({

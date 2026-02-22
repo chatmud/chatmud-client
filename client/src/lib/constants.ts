@@ -39,7 +39,10 @@ export const PROXY_MARKER = 0x00;
 
 // Client identification
 export const CLIENT_NAME = 'ChatMUD-Web';
-export const CLIENT_VERSION = '0.1.0';
+declare const __APP_VERSION__: string;
+declare const __GIT_COMMIT__: string;
+export const CLIENT_VERSION: string = __APP_VERSION__;
+export const GIT_COMMIT: string = __GIT_COMMIT__;
 
 // MCP protocol
 export const MCP_PREFIX = '#$#';

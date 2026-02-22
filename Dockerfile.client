@@ -1,5 +1,7 @@
 # Stage 1: Build client (Svelte/Vite → static assets)
 FROM node:22-alpine AS build
+ARG COMMIT_SHA=dev
+ENV VITE_COMMIT_SHA=${COMMIT_SHA}
 WORKDIR /build/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci

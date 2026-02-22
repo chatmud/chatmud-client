@@ -1,8 +1,15 @@
 import express from "express";
 import { createServer } from "http";
+import { readFileSync } from "fs";
+import path from "path";
 import { MudProxy } from "./proxy.js";
 import { validateConfig, LIMITS } from "./config.js";
 import type { ProxyConfig } from "./types.js";
+
+// Read proxy version from package.json
+const proxyPkg = JSON.parse(readFileSync(path.join(__dirname, "..", "package.json"), "utf-8"));
+const PROXY_VERSION = proxyPkg.version as string;
+const COMMIT_SHA = process.env.COMMIT_SHA || "dev";
 
 // Configuration from environment variables with defaults and validation
 const rawConfig = {
@@ -50,6 +57,8 @@ app.get("/stats", (_req, res) => {
   if (proxy) {
     const stats = proxy.getStats();
     res.json({
+      version: PROXY_VERSION,
+      commit: COMMIT_SHA,
       activeSessions: stats.active,
       persistedSessions: stats.persisted,
       config: {

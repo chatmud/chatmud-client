@@ -6,8 +6,9 @@
   import TTSSettings from './TTSSettings.svelte';
   import ProxySettings from './ProxySettings.svelte';
   import AccessibilitySettings from './AccessibilitySettings.svelte';
+  import AboutInfo from './AboutInfo.svelte';
 
-  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility';
+  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'about';
 
   const sections: { id: SectionId; label: string }[] = [
     { id: 'font', label: 'Font' },
@@ -15,6 +16,7 @@
     { id: 'tts', label: 'TTS' },
     { id: 'proxy', label: 'Proxy' },
     { id: 'accessibility', label: 'Accessibility' },
+    { id: 'about', label: 'About' },
   ];
 
   let activeSection = $state<SectionId>('font');
@@ -105,6 +107,8 @@
           <ProxySettings />
         {:else if section.id === 'accessibility'}
           <AccessibilitySettings />
+        {:else if section.id === 'about'}
+          <AboutInfo />
         {/if}
       </div>
     {/each}
