@@ -15,7 +15,36 @@
     }
   });
 
+  /** Suppress Alt+key combinations used by channel history navigation */
+  function isChannelHistoryKey(e: KeyboardEvent): boolean {
+    if (!e.altKey) return false;
+    // Arrow keys
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return true;
+    // Navigation scheme letters (all schemes: i,j,k,l,w,a,s,d,c,h,t,n,o,e and comma)
+    const navLetters = new Set(['i', 'j', 'k', 'l', 'w', 'a', 's', 'd', 'c', 'h', 't', 'n', 'o', 'e', ',']);
+    if (navLetters.has(e.key.toLowerCase())) return true;
+    // Also check e.code fallback for macOS Option+letter
+    const codeMatch = e.code.match(/^Key([A-Z])$/);
+    if (codeMatch && navLetters.has(codeMatch[1].toLowerCase())) return true;
+    if (e.code === 'Comma') return true;
+    // Space (repeat/copy message)
+    if (e.key === ' ') return true;
+    // Digits (read/jump-to-buffer)
+    if (/^Digit\d$/.test(e.code) || /^\d$/.test(e.key)) return true;
+    // PageUp/PageDown/Home/End
+    if (['PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) return true;
+    // Delete (delete buffer)
+    if (e.key === 'Delete') return true;
+    return false;
+  }
+
   function handleKeydown(event: KeyboardEvent) {
+    // Suppress Alt+key combinations so browser doesn't intercept them
+    if (isChannelHistoryKey(event)) {
+      event.preventDefault();
+      return;
+    }
+
     switch (event.key) {
       case 'Enter': {
         event.preventDefault();
