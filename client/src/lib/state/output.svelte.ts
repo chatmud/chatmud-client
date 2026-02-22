@@ -98,6 +98,25 @@ class OutputState {
     this.debouncedSave();
   }
 
+  addHtmlLine(html: string, caption?: string): void {
+    const text = caption || html.replace(/<[^>]*>/g, '');
+    const line: OutputLine = {
+      id: this.nextLineId++,
+      spans: [],
+      timestamp: Date.now(),
+      html,
+    };
+    this.lines = [...this.lines, line];
+    if (this.lines.length > this.maxLines) {
+      this.lines = this.lines.slice(-this.maxLines);
+    }
+    if (!ttsState.suppressed) {
+      this.pendingAnnouncementText = [...this.pendingAnnouncementText, text];
+      ttsEngine.speakLine(text);
+    }
+    this.debouncedSave();
+  }
+
   /** Push a message to the screen reader live region without adding an output line. */
   announce(text: string): void {
     this.pendingAnnouncementText = [...this.pendingAnnouncementText, text];

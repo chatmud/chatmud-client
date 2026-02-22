@@ -64,4 +64,5 @@ export const GMCP_SUPPORTED_MODULES = [
   'Room 1',
   'Comm.Channel 1',
   'Client.Media 1',
+  'Client.Render 1',
 ];

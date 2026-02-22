@@ -58,6 +58,15 @@ export interface CharItemUpdate {
   item: CharItem;
 }
 
+// Client.Render package
+
+export interface ClientRender {
+  html?: string;
+  markdown?: string;
+  caption?: string;
+  [key: string]: unknown;
+}
+
 // Char.Login package
 
 export interface CharLoginDefault {
