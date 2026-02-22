@@ -87,6 +87,14 @@ class ChannelHistoryState {
         this.bufferOrder = parsed.bufferOrder;
         this.currentBufferIndex = parsed.currentBufferIndex || 0;
         this.timestampsEnabled = parsed.timestampsEnabled ?? true;
+        // Restore messageIdCounter above any persisted IDs
+        let maxId = 0;
+        loadedBuffers.forEach((buffer) => {
+          for (const msg of buffer.messages) {
+            if (msg.id >= maxId) maxId = msg.id + 1;
+          }
+        });
+        this.messageIdCounter = maxId;
       }
     } catch {
       // Corrupted storage — start fresh
