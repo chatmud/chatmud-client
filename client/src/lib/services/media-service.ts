@@ -82,7 +82,7 @@ class MediaService {
     const offset = options.start ? options.start / 1000 : undefined;
     const duration =
       options.finish && options.start !== undefined
-        ? (options.finish - (options.start ?? 0)) / 1000
+        ? (options.finish - options.start) / 1000
         : options.finish
           ? options.finish / 1000
           : undefined;
