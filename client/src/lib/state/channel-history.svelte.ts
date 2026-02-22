@@ -65,6 +65,7 @@ class ChannelHistoryState {
   private messageIdCounter = 0;
   private lastKeyPress: { key: string; time: number; count: number } | null = null;
   private cleanupKeyboard: (() => void) | null = null;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -99,6 +100,16 @@ class ChannelHistoryState {
     } catch {
       // Corrupted storage — start fresh
     }
+  }
+
+  private debouncedSave(): void {
+    if (this.saveTimer !== null) {
+      clearTimeout(this.saveTimer);
+    }
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      this.saveToStorage();
+    }, 500);
   }
 
   private saveToStorage(): void {
@@ -151,7 +162,7 @@ class ChannelHistoryState {
 
     newBuffers.set(bufferName, { ...buffer, messages: updatedMessages });
     this.buffers = newBuffers;
-    this.saveToStorage();
+    this.debouncedSave();
   }
 
   addMessage(text: string): void {
