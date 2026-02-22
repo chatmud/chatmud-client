@@ -6,6 +6,7 @@ import type {
   AccessibilityPreferences,
   EditorPreferences,
   DisplayPreferences,
+  KeyboardPreferences,
 } from '../types/preferences';
 // Note: Don't import from services yet - we'll call persistence functions from the component layer
 
@@ -39,6 +40,7 @@ function getDefaults(): PreferencesSchema {
       filterRules: [],
     },
     editor: { confirmOnSend: true, fontSize: 14, tabSize: 2, wordWrap: true },
+    keyboard: { navigationKeyScheme: 'jkli' },
     display: {
       autoLinkUrls: true,
       timestamps: false,
@@ -63,6 +65,7 @@ function loadFromStorage(): PreferencesSchema {
       accessibility: { ...defaults.accessibility, ...(parsed.accessibility || {}) },
       tts: { ...defaults.tts, ...(parsed.tts || {}) },
       editor: { ...defaults.editor, ...(parsed.editor || {}) },
+      keyboard: { ...defaults.keyboard, ...(parsed.keyboard || {}) },
       display: { ...defaults.display, ...(parsed.display || {}) },
       version: CURRENT_VERSION,
     };
@@ -94,6 +97,9 @@ class PreferencesState {
   }
   get editor() {
     return this._prefs.editor;
+  }
+  get keyboard() {
+    return this._prefs.keyboard;
   }
   get display() {
     return this._prefs.display;
@@ -131,6 +137,11 @@ class PreferencesState {
 
   updateEditor(editor: Partial<EditorPreferences>): void {
     this._prefs = { ...this._prefs, editor: { ...this._prefs.editor, ...editor } };
+    this.save();
+  }
+
+  updateKeyboard(keyboard: Partial<KeyboardPreferences>): void {
+    this._prefs = { ...this._prefs, keyboard: { ...this._prefs.keyboard, ...keyboard } };
     this.save();
   }
 

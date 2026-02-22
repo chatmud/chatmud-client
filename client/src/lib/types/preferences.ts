@@ -53,6 +53,12 @@ export interface DisplayPreferences {
   confirmDisplayUrl: boolean;
 }
 
+export type NavigationKeyScheme = 'jkli' | 'wasd' | 'dvorak-rh' | 'dvorak-lh';
+
+export interface KeyboardPreferences {
+  navigationKeyScheme: NavigationKeyScheme;
+}
+
 export interface PreferencesSchema {
   version: number;
   font: FontPreferences;
@@ -62,4 +68,5 @@ export interface PreferencesSchema {
   tts: TtsPreferences;
   editor: EditorPreferences;
   display: DisplayPreferences;
+  keyboard: KeyboardPreferences;
 }
