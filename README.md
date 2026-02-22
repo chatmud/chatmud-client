@@ -1,50 +1,41 @@
 # ChatMUD Client
 
-A web-based MUD client for connecting to [ChatMUD](https://chatmud.com) (and other MUD servers) from a browser. It works by proxying WebSocket connections from the browser through a Node.js backend to the upstream Telnet server.
+Web-based MUD client that connects to [ChatMUD](https://chatmud.com) (or any MUD) through a WebSocket-to-Telnet proxy. Svelte 5 + TypeScript frontend, Express + ws backend.
 
-Built with Svelte 5 and TypeScript on the frontend, Express + ws on the backend.
+## What it does
 
-## Features
-
-- Full telnet negotiation (ECHO, SGA, NAWS, terminal type)
-- ANSI color rendering (256-color and true color)
-- MCP (MUD Client Protocol) support with packages for editing, user lists, status, and more
-- GMCP (Generic MUD Communication Protocol) support (see below)
-- Session persistence across disconnects with configurable buffer replay
-- Integrated Monaco editor for in-game editing
-- Text-to-speech
-- Accessibility: screen reader support, skip links, keyboard navigation
+- Proxies browser WebSocket connections to an upstream Telnet server
+- Handles telnet negotiation (ECHO, SGA, NAWS, terminal type)
+- Renders ANSI colors (256 and true color)
+- Supports MCP (editing, user lists, status, etc.)
+- Supports GMCP for room info, channel messages, and media playback
+- Persists sessions across disconnects with configurable buffer replay
+- Embeds Monaco for in-game editing
+- Text-to-speech, screen reader support, skip links, keyboard nav
 - Installable as a PWA
-- Docker deployment with a multi-stage build
+- Dockerized
 
-## Development
+## Setup
 
-You'll need Node.js 22+.
-
-Run the proxy and client in separate terminals:
+Node.js 22+. Run the proxy and client in separate terminals:
 
 ```sh
 # proxy (port 3001)
-cd proxy
-npm install
-npm run dev
+cd proxy && npm install && npm run dev
 
 # client (port 5173)
-cd client
-npm install
-npm run dev
+cd client && npm install && npm run dev
 ```
 
-The Vite dev server proxies WebSocket connections to the backend automatically.
+Vite proxies WebSocket connections to the backend in dev.
 
 ### Tests
 
 ```sh
-cd client
-npm test
+cd client && npm test
 ```
 
-## Production
+## Deployment
 
 ### Docker
 
@@ -53,11 +44,7 @@ docker build -t chatmud-client .
 docker run -p 3001:3001 chatmud-client
 ```
 
-Or with docker-compose:
-
-```sh
-docker-compose up
-```
+Or `docker-compose up`.
 
 ### Manual
 
@@ -66,51 +53,41 @@ cd client && npm ci && npm run build
 cd ../proxy && npm ci && npm run build && npm start
 ```
 
-The client build outputs static files into `client/dist/`.
+Static files end up in `client/dist/`.
 
-## Configuration
-
-All configuration is through environment variables:
+## Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | Server port |
 | `UPSTREAM_URL` | `tls://chatmud.com:7443` | Target MUD server |
-| `PERSISTENCE_TIMEOUT_MS` | `600000` | How long to keep a session alive after disconnect (ms) |
-| `MAX_BUFFER_LINES` | `1000` | Lines to buffer for replay on reconnect |
-| `USE_PROXY_PROTOCOL` | `false` | Enable HAProxy PROXY protocol v1 |
+| `PERSISTENCE_TIMEOUT_MS` | `600000` | Session keepalive after disconnect (ms) |
+| `MAX_BUFFER_LINES` | `1000` | Lines buffered for reconnect replay |
+| `USE_PROXY_PROTOCOL` | `false` | HAProxy PROXY protocol v1 |
 
-## GMCP Support
+## GMCP
 
-The client negotiates the following [GMCP](https://www.gammon.com.au/gmcp) packages with the server:
+The client negotiates these [GMCP](https://www.gammon.com.au/gmcp) packages:
 
-| Package | Description |
+| Package | Used for |
 |---|---|
-| `Char.Base` | Character identity (name, class, race, level) |
-| `Char.Vitals` | HP, mana, and movement points (current and max) |
-| `Char.Stats` | Character attribute scores |
-| `Char.MaxStats` | Maximum character attribute scores |
-| `Char.Status` | General character status flags |
-| `Char.Worth` | Currency and wealth information |
-| `Room.Info` | Current room name, area, description, and exits (displayed in the sidebar) |
-| `Comm.Channel` | Channel messages with channel name, sender, and content |
-| `Group` | Party/group member list |
-| `Client.Media` | Sound and music playback with volume, fading, looping, priority, and captions |
+| `Room.Info` | Room name, area, and exits shown in the sidebar |
+| `Comm.Channel` | Channel message history with buffer switching |
+| `Client.Media` | Sound/music playback via Web Audio (volume, fading, looping, priority) |
 
-`Room.Info` data is shown in the sidebar. `Client.Media` drives a full audio playback engine. The remaining packages store their data in reactive state for use by future UI components or user scripts.
-
-## Project Structure
+## Project layout
 
 ```
 client/          Svelte frontend
   src/
-    components/  UI components (output, input, editor, settings, etc.)
+    components/  UI (output, input, editor, settings, etc.)
     lib/
-      services/  WebSocket client, telnet/ANSI/MCP/GMCP parsers, TTS
+      audio/     Web Audio engine
+      services/  WebSocket, telnet/ANSI/MCP/GMCP, TTS, media
       state/     Reactive state (Svelte 5 runes)
       types/     TypeScript interfaces
-proxy/           Node.js WebSocket-to-Telnet proxy
+proxy/           WebSocket-to-Telnet proxy
   src/
-    proxy.ts     Core proxy logic
-    index.ts     Express server entry point
+    proxy.ts     Proxy logic
+    index.ts     Express entry point
 ```

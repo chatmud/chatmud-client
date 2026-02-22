@@ -58,14 +58,7 @@ export const DEFAULT_MAX_OUTPUT_LINES = 1000;
 
 // GMCP modules we support
 export const GMCP_SUPPORTED_MODULES = [
-  'Char.Base 1',
-  'Char.Vitals 1',
-  'Char.Stats 1',
-  'Char.MaxStats 1',
-  'Char.Status 1',
-  'Char.Worth 1',
   'Room.Info 1',
   'Comm.Channel 1',
-  'Group 1',
   'Client.Media 1',
 ];
