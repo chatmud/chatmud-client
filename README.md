@@ -66,7 +66,7 @@ cd client && npm ci && npm run build
 cd ../proxy && npm ci && npm run build && npm start
 ```
 
-The client build outputs static files into `proxy/public/`, and the Express server serves them alongside the WebSocket endpoint.
+The client build outputs static files into `client/dist/`.
 
 ## Configuration
 

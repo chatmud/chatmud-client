@@ -62,7 +62,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../proxy/public',
+    outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       output: {
