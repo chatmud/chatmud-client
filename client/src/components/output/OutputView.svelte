@@ -32,7 +32,7 @@
   }
 
   $effect(() => {
-    const _lineCount = outputState.lines.length;
+    outputState.lines.length;
     const locked = outputState.scrollLocked;
 
     if (locked) {

@@ -172,7 +172,7 @@
    * Sync Monaco theme when app theme changes.
    */
   $effect(() => {
-    const theme = preferencesState.theme;
+    preferencesState.theme;
     if (editor && monaco) {
       monaco.editor.setTheme(getMonacoTheme());
     }
