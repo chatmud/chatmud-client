@@ -20,9 +20,8 @@ class MediaState {
   }
 
   reset(): void {
-    // Stop all audio elements
     for (const m of this.activeMedia) {
-      try { m.audio.pause(); m.audio.src = ''; } catch {}
+      try { m.playback.stop(); } catch {}
     }
     this.activeMedia = [];
     this.defaultUrl = null;

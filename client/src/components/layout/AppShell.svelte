@@ -9,6 +9,7 @@
   import StatusBar from './StatusBar.svelte';
   import CommandInput from '../input/CommandInput.svelte';
   import PreferencesDialog from '../preferences/PreferencesDialog.svelte';
+  import { mediaService } from '../../lib/services/media-service';
 
   let showSidebar = $derived(uiState.sidebarOpen);
 
@@ -39,6 +40,7 @@
 
   function toggleMute() {
     mediaState.muted = !mediaState.muted;
+    mediaService.updateVolumes();
   }
 </script>
 

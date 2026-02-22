@@ -7,29 +7,25 @@ import type {
   MediaType,
 } from '../types/media';
 import { mediaState } from '../state/media.svelte';
+import { audioEngine } from './audio-engine-instance';
 import { generateId } from '../utils/generate-id';
-
 class MediaService {
-  private preloadCache = new Map<string, HTMLAudioElement>();
-  private fadeIntervals = new Map<HTMLAudioElement, ReturnType<typeof setInterval>>();
-
   /** Set the default base URL for media files. */
   handleDefault(options: MediaDefaultOptions): void {
     mediaState.defaultUrl = options.url;
   }
 
-  /** Preload a media file into the cache. */
+  /** Preload a media file into the engine cache. */
   handleLoad(options: MediaLoadOptions): void {
     const url = this.resolveUrl(options.name, options.url);
     if (!url) return;
-    const audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = url;
-    this.preloadCache.set(options.name, audio);
+    audioEngine.preload(url).catch(err => {
+      console.warn('[Media] Preload failed:', err);
+    });
   }
 
   /** Play a media file according to the given options. */
-  handlePlay(options: MediaPlayOptions): void {
+  async handlePlay(options: MediaPlayOptions): Promise<void> {
     const url = this.resolveUrl(options.name, options.url);
     if (!url) return;
 
@@ -69,29 +65,39 @@ class MediaService {
       }
     }
 
-    // Create audio element (reuse preloaded if available)
-    let audio = this.preloadCache.get(options.name);
-    if (audio) {
-      this.preloadCache.delete(options.name);
-    } else {
-      audio = new Audio(url);
+    // Ensure AudioContext is resumed
+    await audioEngine.resume();
+
+    // Create sound via engine (fetches + decodes + caches the buffer)
+    let sound;
+    try {
+      sound = await audioEngine.createSound(url);
+    } catch (err) {
+      console.warn('[Media] Failed to load:', err);
+      return;
     }
 
-    // Set start position
-    if (options.start) {
-      audio.currentTime = options.start / 1000;
-    }
-
-    // Calculate effective volume
+    // Map GMCP options to engine PlayOptions
     const effectiveVolume = this.calculateVolume(volume, type);
+    const offset = options.start ? options.start / 1000 : undefined;
+    const duration =
+      options.finish && options.start !== undefined
+        ? (options.finish - (options.start ?? 0)) / 1000
+        : options.finish
+          ? options.finish / 1000
+          : undefined;
+    const loop = loops === -1 ? true : loops > 1 ? loops : false;
+    const fadeIn = options.fadein && options.fadein > 0
+      ? { duration: options.fadein }
+      : undefined;
 
-    // Handle fade-in
-    if (options.fadein && options.fadein > 0) {
-      audio.volume = 0;
-      this.fadeVolume(audio, 0, effectiveVolume, options.fadein);
-    } else {
-      audio.volume = effectiveVolume;
-    }
+    const playback = sound.play({
+      volume: effectiveVolume,
+      offset,
+      duration,
+      loop,
+      fadeIn,
+    });
 
     const id = generateId();
     const activeMedia: ActiveMedia = {
@@ -104,44 +110,19 @@ class MediaService {
       volume,
       loops,
       loopsRemaining: loops,
-      audio,
+      playback,
       caption: options.caption,
       fadeoutDuration: options.fadeout,
     };
 
-    // Handle finish time
-    if (options.finish) {
-      const checkFinish = () => {
-        if (audio!.currentTime * 1000 >= options.finish!) {
-          this.handleMediaEnd(activeMedia);
-        }
-      };
-      audio.addEventListener('timeupdate', checkFinish);
-      activeMedia._cleanupFinish = () => audio!.removeEventListener('timeupdate', checkFinish);
-    }
-
-    // Handle natural end / looping
-    const onEnded = () => {
-      if (activeMedia.loopsRemaining === -1) {
-        // Infinite loop
-        audio!.currentTime = options.start ? options.start / 1000 : 0;
-        audio!.play().catch(() => this.handleMediaEnd(activeMedia));
-      } else if (activeMedia.loopsRemaining > 1) {
-        activeMedia.loopsRemaining--;
-        audio!.currentTime = options.start ? options.start / 1000 : 0;
-        audio!.play().catch(() => this.handleMediaEnd(activeMedia));
-      } else {
-        this.handleMediaEnd(activeMedia);
-      }
+    // Auto-remove when playback ends naturally
+    const cleanup = () => {
+      sound.dispose();
+      mediaState.removeMedia(id);
     };
-    audio.addEventListener('ended', onEnded);
-    activeMedia._cleanupEnded = () => audio!.removeEventListener('ended', onEnded);
+    playback.on('ended', cleanup);
 
     mediaState.addMedia(activeMedia);
-    audio.play().catch(err => {
-      console.warn('[Media] Playback failed:', err);
-      mediaState.removeMedia(id);
-    });
   }
 
   /** Stop media matching the given criteria. Empty options stops all. */
@@ -167,10 +148,10 @@ class MediaService {
     }
   }
 
-  /** Recompute effective volumes for all active media (after user changes master/category volumes). */
+  /** Recompute effective volumes for all active media (after user changes master/category volumes or mute). */
   updateVolumes(): void {
     for (const m of mediaState.activeMedia) {
-      m.audio.volume = this.calculateVolume(m.volume, m.type);
+      m.playback.volume = this.calculateVolume(m.volume, m.type);
     }
   }
 
@@ -193,76 +174,17 @@ class MediaService {
     return (mediaVolume / 100) * (categoryVolume / 100) * (mediaState.masterVolume / 100);
   }
 
-  private cleanupMedia(media: ActiveMedia): void {
-    media._cleanupFinish?.();
-    media._cleanupEnded?.();
-    this.cancelFade(media.audio);
-  }
-
   private stopSingle(media: ActiveMedia, fadeoutMs?: number): void {
+    const pb = media.playback;
     if (fadeoutMs && fadeoutMs > 0) {
-      this.fadeVolume(media.audio, media.audio.volume, 0, fadeoutMs, () => {
-        this.cleanupMedia(media);
-        media.audio.pause();
-        media.audio.src = '';
+      pb.fadeOut({ duration: fadeoutMs }).then(() => {
+        pb.stop();
         mediaState.removeMedia(media.id);
       });
     } else {
-      this.cleanupMedia(media);
-      media.audio.pause();
-      media.audio.src = '';
+      pb.stop();
       mediaState.removeMedia(media.id);
     }
-  }
-
-  private handleMediaEnd(media: ActiveMedia): void {
-    if (media.fadeoutDuration && media.fadeoutDuration > 0) {
-      this.fadeVolume(media.audio, media.audio.volume, 0, media.fadeoutDuration, () => {
-        this.cleanupMedia(media);
-        media.audio.pause();
-        mediaState.removeMedia(media.id);
-      });
-    } else {
-      this.cleanupMedia(media);
-      media.audio.pause();
-      mediaState.removeMedia(media.id);
-    }
-  }
-
-  private cancelFade(audio: HTMLAudioElement): void {
-    const existing = this.fadeIntervals.get(audio);
-    if (existing) {
-      clearInterval(existing);
-      this.fadeIntervals.delete(audio);
-    }
-  }
-
-  private fadeVolume(
-    audio: HTMLAudioElement,
-    from: number,
-    to: number,
-    durationMs: number,
-    onComplete?: () => void,
-  ): void {
-    this.cancelFade(audio);
-
-    const steps = Math.max(1, Math.floor(durationMs / 50)); // 50ms per step
-    const stepSize = (to - from) / steps;
-    let step = 0;
-
-    const interval = setInterval(() => {
-      step++;
-      if (step >= steps) {
-        audio.volume = Math.max(0, Math.min(1, to));
-        this.fadeIntervals.delete(audio);
-        clearInterval(interval);
-        onComplete?.();
-      } else {
-        audio.volume = Math.max(0, Math.min(1, from + stepSize * step));
-      }
-    }, 50);
-
-    this.fadeIntervals.set(audio, interval);
   }
 }
 

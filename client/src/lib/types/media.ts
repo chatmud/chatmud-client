@@ -47,11 +47,7 @@ export interface ActiveMedia {
   volume: number;
   loops: number;
   loopsRemaining: number;
-  audio: HTMLAudioElement;
+  playback: import('../audio/playback').Playback | import('../audio/streaming-playback').StreamingPlayback;
   caption?: string;
   fadeoutDuration?: number;
-  /** @internal cleanup callback for timeupdate listener */
-  _cleanupFinish?: () => void;
-  /** @internal cleanup callback for ended listener */
-  _cleanupEnded?: () => void;
 }
