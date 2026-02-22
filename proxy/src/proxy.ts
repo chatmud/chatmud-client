@@ -13,12 +13,7 @@ import type {
   UpstreamSocket,
 } from "./types.js";
 import { MAX_BUFFER_SIZE_BYTES } from "./types.js";
-
-// Configuration limits (same as in index.ts)
-const CONFIG_LIMITS = {
-  PERSISTENCE_TIMEOUT: { MIN: 0, MAX: 43200000, DEFAULT: 600000 },
-  BUFFER_LINES: { MIN: 10, MAX: 10000, DEFAULT: 1000 },
-};
+import { LIMITS } from "./config.js";
 
 // Telnet protocol constants
 const enum Telnet {
@@ -46,7 +41,7 @@ const enum NewEnviron {
 /**
  * Generate a random session ID
  */
-function generateSessionId(): string {
+export function generateSessionId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < 24; i++) {
@@ -58,7 +53,7 @@ function generateSessionId(): string {
 /**
  * Validate and clamp a config value to its limits
  */
-function validateConfigValue(
+export function validateConfigValue(
   value: number | undefined,
   limits: { MIN: number; MAX: number; DEFAULT: number }
 ): number {
@@ -71,7 +66,7 @@ function validateConfigValue(
 /**
  * Parse and validate session config from URL parameters or defaults
  */
-function parseSessionConfig(
+export function parseSessionConfig(
   params: URLSearchParams,
   defaultConfig: ProxyConfig
 ): SessionConfig {
@@ -86,11 +81,11 @@ function parseSessionConfig(
   return {
     persistenceTimeout: validateConfigValue(
       persistenceTimeout,
-      CONFIG_LIMITS.PERSISTENCE_TIMEOUT
+      LIMITS.PERSISTENCE_TIMEOUT
     ),
     maxBufferLines: validateConfigValue(
       maxBufferLines,
-      CONFIG_LIMITS.BUFFER_LINES
+      LIMITS.BUFFER_LINES
     ),
   };
 }
@@ -103,7 +98,7 @@ function parseSessionConfig(
  * - ESC (2) -> ESC ESC
  * - USERVAR (3) -> ESC USERVAR
  */
-function escapeEnvironData(data: Buffer): Buffer {
+export function escapeEnvironData(data: Buffer): Buffer {
   const escaped: number[] = [];
 
   for (let i = 0; i < data.length; i++) {
@@ -132,12 +127,12 @@ function escapeEnvironData(data: Buffer): Buffer {
  * Format: IAC SB NEW-ENVIRON IS VAR "IPADDRESS" VALUE "<ip>" IAC SE
  * Data is escaped per RFC 1572
  */
-function buildNewEnvironResponse(varName: string, value: string): Buffer {
+export function buildNewEnvironResponse(varName: string, value: string): Buffer {
   const varNameBytes = escapeEnvironData(Buffer.from(varName, "ascii"));
   const valueBytes = escapeEnvironData(Buffer.from(value, "ascii"));
 
   // IAC SB NEW-ENVIRON IS VAR <name> VALUE <value> IAC SE
-  const buffer = Buffer.alloc(6 + varNameBytes.length + 1 + valueBytes.length + 2);
+  const buffer = Buffer.alloc(5 + varNameBytes.length + 1 + valueBytes.length + 2);
   let offset = 0;
 
   buffer[offset++] = Telnet.IAC;
@@ -161,11 +156,11 @@ function buildNewEnvironResponse(varName: string, value: string): Buffer {
  * Format: IAC SB NEW-ENVIRON INFO VAR "IPADDRESS" VALUE "<ip>" IAC SE
  * Data is escaped per RFC 1572
  */
-function buildNewEnvironInfo(varName: string, value: string): Buffer {
+export function buildNewEnvironInfo(varName: string, value: string): Buffer {
   const varNameBytes = escapeEnvironData(Buffer.from(varName, "ascii"));
   const valueBytes = escapeEnvironData(Buffer.from(value, "ascii"));
 
-  const buffer = Buffer.alloc(6 + varNameBytes.length + 1 + valueBytes.length + 2);
+  const buffer = Buffer.alloc(5 + varNameBytes.length + 1 + valueBytes.length + 2);
   let offset = 0;
 
   buffer[offset++] = Telnet.IAC;
@@ -187,7 +182,7 @@ function buildNewEnvironInfo(varName: string, value: string): Buffer {
 /**
  * Build IAC WILL NEW-ENVIRON
  */
-function buildWillNewEnviron(): Buffer {
+export function buildWillNewEnviron(): Buffer {
   return Buffer.from([Telnet.IAC, Telnet.WILL, Telnet.NEW_ENVIRON]);
 }
 
@@ -198,7 +193,7 @@ function buildWillNewEnviron(): Buffer {
  * This passes the original client connection info through the proxy.
  * The upstream server can then see the real client IP instead of the proxy IP.
  */
-function buildProxyProtocolHeader(
+export function buildProxyProtocolHeader(
   sourceIp: string,
   destIp: string,
   sourcePort: number,
@@ -213,7 +208,7 @@ function buildProxyProtocolHeader(
 /**
  * Handles telnet NEW-ENVIRON negotiation for passing client IP to upstream
  */
-class TelnetEnvironHandler {
+export class TelnetEnvironHandler {
   private clientIp: string;
   private newEnvironNegotiated: boolean = false;
   private parseBuffer: Buffer = Buffer.alloc(0);
@@ -437,6 +432,59 @@ class TelnetEnvironHandler {
 }
 
 /**
+ * Extract real client IP from request, checking X-Forwarded-For header
+ */
+export function getClientInfo(req: IncomingMessage): { ip: string; port: number } {
+  // Check X-Forwarded-For header first (for clients behind load balancer)
+  const forwardedFor = req.headers["x-forwarded-for"];
+  let clientIp: string;
+
+  if (forwardedFor) {
+    // X-Forwarded-For can be comma-separated list, take first (original client)
+    const forwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    clientIp = forwarded.split(",")[0].trim();
+  } else {
+    // Fall back to socket remote address
+    clientIp = req.socket.remoteAddress || "127.0.0.1";
+  }
+
+  // Handle IPv6-mapped IPv4 addresses (::ffff:192.168.1.1)
+  if (clientIp.startsWith("::ffff:")) {
+    clientIp = clientIp.substring(7);
+  }
+
+  // Get port from X-Forwarded-Port or socket
+  const forwardedPort = req.headers["x-forwarded-port"];
+  const clientPort = forwardedPort
+    ? parseInt(Array.isArray(forwardedPort) ? forwardedPort[0] : forwardedPort, 10)
+    : req.socket.remotePort || 0;
+
+  return { ip: clientIp, port: clientPort };
+}
+
+/**
+ * Parse upstream URL into host, port, and whether to use TLS
+ */
+export function parseUpstreamUrl(url: string): { host: string; port: number; useTls: boolean } {
+  // Support formats: tls://host:port, tcp://host:port, host:port (defaults to TLS)
+  let useTls = true;
+  let hostPort = url;
+
+  if (url.startsWith("tls://") || url.startsWith("wss://") || url.startsWith("ssl://")) {
+    useTls = true;
+    hostPort = url.replace(/^(tls|wss|ssl):\/\//, "");
+  } else if (url.startsWith("tcp://") || url.startsWith("ws://") || url.startsWith("telnet://")) {
+    useTls = false;
+    hostPort = url.replace(/^(tcp|ws|telnet):\/\//, "");
+  }
+
+  const [host, portStr] = hostPort.split(":");
+  const port = parseInt(portStr || (useTls ? "7443" : "7777"), 10);
+
+  return { host, port, useTls };
+}
+
+/**
  * WebSocket proxy with connection persistence
  */
 export class MudProxy {
@@ -487,43 +535,12 @@ export class MudProxy {
   }
 
   /**
-   * Extract real client IP from request, checking X-Forwarded-For header
-   */
-  private getClientInfo(req: IncomingMessage): { ip: string; port: number } {
-    // Check X-Forwarded-For header first (for clients behind load balancer)
-    const forwardedFor = req.headers["x-forwarded-for"];
-    let clientIp: string;
-
-    if (forwardedFor) {
-      // X-Forwarded-For can be comma-separated list, take first (original client)
-      const forwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-      clientIp = forwarded.split(",")[0].trim();
-    } else {
-      // Fall back to socket remote address
-      clientIp = req.socket.remoteAddress || "127.0.0.1";
-    }
-
-    // Handle IPv6-mapped IPv4 addresses (::ffff:192.168.1.1)
-    if (clientIp.startsWith("::ffff:")) {
-      clientIp = clientIp.substring(7);
-    }
-
-    // Get port from X-Forwarded-Port or socket
-    const forwardedPort = req.headers["x-forwarded-port"];
-    const clientPort = forwardedPort
-      ? parseInt(Array.isArray(forwardedPort) ? forwardedPort[0] : forwardedPort, 10)
-      : req.socket.remotePort || 0;
-
-    return { ip: clientIp, port: clientPort };
-  }
-
-  /**
    * Handle new WebSocket connection from client
    */
   private handleConnection(clientWs: WebSocket, req: IncomingMessage): void {
     const url = new URL(req.url || "", `http://${req.headers.host}`);
     const sessionId = url.searchParams.get("sessionId");
-    const clientInfo = this.getClientInfo(req);
+    const clientInfo = getClientInfo(req);
 
     console.log(
       `[Proxy] New connection from ${clientInfo.ip}:${clientInfo.port}${sessionId ? ` with sessionId: ${sessionId}` : ""}`
@@ -675,29 +692,6 @@ export class MudProxy {
   }
 
   /**
-   * Parse upstream URL into host, port, and whether to use TLS
-   */
-  private parseUpstreamUrl(): { host: string; port: number; useTls: boolean } {
-    const url = this.config.upstreamUrl;
-    // Support formats: tls://host:port, tcp://host:port, host:port (defaults to TLS)
-    let useTls = true;
-    let hostPort = url;
-
-    if (url.startsWith("tls://") || url.startsWith("wss://") || url.startsWith("ssl://")) {
-      useTls = true;
-      hostPort = url.replace(/^(tls|wss|ssl):\/\//, "");
-    } else if (url.startsWith("tcp://") || url.startsWith("ws://") || url.startsWith("telnet://")) {
-      useTls = false;
-      hostPort = url.replace(/^(tcp|ws|telnet):\/\//, "");
-    }
-
-    const [host, portStr] = hostPort.split(":");
-    const port = parseInt(portStr || (useTls ? "7443" : "7777"), 10);
-
-    return { host, port, useTls };
-  }
-
-  /**
    * Check if upstream socket is writable
    */
   private isUpstreamAlive(session: Session): boolean {
@@ -708,7 +702,7 @@ export class MudProxy {
    * Connect to upstream MUD server via TCP/TLS
    */
   private connectUpstream(session: Session, clientIp: string): void {
-    const { host, port, useTls } = this.parseUpstreamUrl();
+    const { host, port, useTls } = parseUpstreamUrl(this.config.upstreamUrl);
     console.log(`[Proxy] Connecting to upstream: ${host}:${port} (${useTls ? "TLS" : "plain"})`);
 
     // Create telnet handler for NEW-ENVIRON negotiation
@@ -907,11 +901,11 @@ export class MudProxy {
       const newConfig: SessionConfig = {
         persistenceTimeout: validateConfigValue(
           message.persistenceTimeout,
-          CONFIG_LIMITS.PERSISTENCE_TIMEOUT
+          LIMITS.PERSISTENCE_TIMEOUT
         ),
         maxBufferLines: validateConfigValue(
           message.maxBufferLines,
-          CONFIG_LIMITS.BUFFER_LINES
+          LIMITS.BUFFER_LINES
         ),
       };
 
