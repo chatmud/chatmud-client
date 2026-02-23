@@ -10,12 +10,22 @@
   import CommandInput from '../input/CommandInput.svelte';
   import PreferencesDialog from '../preferences/PreferencesDialog.svelte';
   import { mediaService } from '../../lib/services/media-service';
+  import { ttsEngine } from '../../lib/services/tts-engine';
 
   let showSidebar = $derived(uiState.sidebarOpen);
 
+  let isMobile = $state(window.matchMedia('(max-width: 600px)').matches);
+
+  $effect(() => {
+    const mq = window.matchMedia('(max-width: 600px)');
+    const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  });
+
   let gridColumns = $derived(() => {
     const cols: string[] = [];
-    if (showSidebar) cols.push('var(--sidebar-width)');
+    if (showSidebar && !isMobile) cols.push('var(--sidebar-width)');
     cols.push('1fr');
     return cols.join(' ');
   });
@@ -42,6 +52,13 @@
     mediaState.muted = !mediaState.muted;
     mediaService.updateVolumes();
   }
+
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      mediaService.handleStop({});
+      ttsEngine.cancel();
+    }
+  }
 </script>
 
 <!-- Toolbar -->
@@ -62,11 +79,7 @@
   </div>
 
   <div class="toolbar-right">
-    {#if connectionState.status === 'disconnected'}
-      <button class="toolbar-action connect" onclick={handleConnect}>
-        Connect
-      </button>
-    {:else}
+    {#if connectionState.status !== 'disconnected'}
       {#if outputState.lines.length > 0}
         <button class="toolbar-btn" onclick={handleClear} aria-label="Clear output" title="Clear output">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 01-1-1V2a1 1 0 011-1H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1v1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
@@ -79,9 +92,15 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11.536 14.01A8.47 8.47 0 0014.026 8a8.47 8.47 0 00-2.49-6.01l-.708.707A7.48 7.48 0 0113.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/><path d="M10.121 12.596A6.48 6.48 0 0012.025 8a6.48 6.48 0 00-1.904-4.596l-.707.707A5.48 5.48 0 0111.025 8a5.48 5.48 0 01-1.61 3.89l.706.706z"/><path d="M8.707 11.182A4.49 4.49 0 0010.025 8a4.49 4.49 0 00-1.318-3.182l-.708.708A3.49 3.49 0 019.025 8 3.49 3.49 0 018 10.475l.707.707zM6.717 3.55A.5.5 0 017 4v8a.5.5 0 01-.812.39L3.825 10.5H1.5A.5.5 0 011 10V6a.5.5 0 01.5-.5h2.325l2.363-1.89a.5.5 0 01.529-.06z"/></svg>
         {/if}
       </button>
-      <button class="toolbar-btn" onclick={() => uiState.togglePreferences()} aria-label="Preferences" title="Preferences">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
+    {/if}
+    <button class="toolbar-btn" onclick={() => uiState.togglePreferences()} aria-label="Preferences" title="Preferences">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 100 6.492 3.246 3.246 0 000-6.492zM5.754 8a2.246 2.246 0 114.492 0 2.246 2.246 0 01-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 01-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 01-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 01.52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 011.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 011.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 01.52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 01-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 01-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 002.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 001.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 00-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 00-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 00-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 001.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 003.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 002.692-1.115l.094-.319z"/></svg>
+    </button>
+    {#if connectionState.status === 'disconnected'}
+      <button class="toolbar-action connect" onclick={handleConnect}>
+        Connect
       </button>
+    {:else}
       <button class="toolbar-action disconnect" onclick={handleDisconnect}>
         Disconnect
       </button>
@@ -227,6 +246,7 @@
     flex: 1;
     overflow: hidden;
     min-height: 0;
+    position: relative;
   }
 
   .grid-sidebar {
@@ -241,6 +261,19 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+  }
+
+  @media (max-width: 600px) {
+    .grid-sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      z-index: 20;
+      background-color: var(--bg-secondary);
+      box-shadow: 2px 0 12px rgba(0, 0, 0, 0.4);
+    }
   }
 
   .bottom-bar {

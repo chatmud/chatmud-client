@@ -47,7 +47,14 @@
   function announceOutputLine(lineIndex: number): void {
     const line = outputState.lines[lineIndex];
     if (!line) return;
-    const text = line.spans.map((s) => s.text).join('');
+    let text: string;
+    if (line.html) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = line.html;
+      text = tmp.textContent || '';
+    } else {
+      text = line.spans.map((s) => s.text).join('');
+    }
     if (text.length > 0) {
       outputState.announce(text);
     }
@@ -131,31 +138,33 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  id="output-region"
-  class="output-view"
-  role="log"
-  aria-label="Output"
-  aria-live="off"
-  tabindex={0}
-  bind:this={container}
-  onscroll={handleScroll}
-  onkeydown={handleOutputKeyDown}
-  onfocus={handleOutputFocus}
->
-  {#if showWelcome}
-    <div class="welcome">
-      <img src="/logo.png" alt="ChatMUD logo" class="welcome-logo" />
-      <p class="welcome-text">Welcome to <strong>ChatMUD</strong></p>
-      <p class="welcome-sub">Click <strong>Connect</strong> to begin your adventure</p>
-    </div>
-  {:else}
-    {#each outputState.lines as line, index (line.id)}
-      <OutputLine {line} focused={focusedLineIndex === index} {index} />
-    {/each}
-  {/if}
+<div class="output-wrapper">
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    id="output-region"
+    class="output-view"
+    role="log"
+    aria-label="Output"
+    aria-live="off"
+    tabindex={0}
+    bind:this={container}
+    onscroll={handleScroll}
+    onkeydown={handleOutputKeyDown}
+    onfocus={handleOutputFocus}
+  >
+    {#if showWelcome}
+      <div class="welcome">
+        <img src="/logo.png" alt="ChatMUD logo" class="welcome-logo" />
+        <p class="welcome-text">Welcome to <strong>ChatMUD</strong></p>
+        <p class="welcome-sub">Click <strong>Connect</strong> to begin your adventure</p>
+      </div>
+    {:else}
+      {#each outputState.lines as line, index (line.id)}
+        <OutputLine {line} focused={focusedLineIndex === index} {index} />
+      {/each}
+    {/if}
+  </div>
 
   {#if !outputState.scrollLocked && outputState.lines.length > 0}
     <button
@@ -169,12 +178,18 @@
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 01.708 0L8 10.293l5.646-5.647a.5.5 0 01.708.708l-6 6a.5.5 0 01-.708 0l-6-6a.5.5 0 010-.708z"/></svg>
     </button>
   {/if}
-
 </div>
 
 <style>
-  .output-view {
+  .output-wrapper {
+    position: relative;
     flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .output-view {
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 4px 14px;
@@ -183,7 +198,6 @@
     font-family: var(--font-family);
     font-size: var(--font-size);
     line-height: var(--line-height);
-    position: relative;
     outline: none;
   }
 
@@ -220,8 +234,11 @@
   }
 
   .scroll-to-bottom {
-    position: sticky;
-    bottom: 8px;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -237,7 +254,6 @@
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     transition: background-color var(--transition-speed);
-    margin: 0 auto;
   }
 
   .scroll-to-bottom:hover {
