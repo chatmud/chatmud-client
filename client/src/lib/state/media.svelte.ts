@@ -1,15 +1,16 @@
 import type { ActiveMedia } from '../types/media';
+import { preferencesState } from './preferences.svelte';
 
 class MediaState {
   activeMedia = $state<ActiveMedia[]>([]);
   defaultUrl = $state<string | null>(null);
-  masterVolume = $state(60);       // 0-100 master volume
-  soundVolume = $state(60);        // 0-100 sound category volume
-  ambianceVolume = $state(60);     // 0-100 ambiance category volume
+  masterVolume = $state(preferencesState.sound.masterVolume);
+  soundVolume = $state(preferencesState.sound.soundVolume);
+  ambianceVolume = $state(preferencesState.sound.ambianceVolume);
   muted = $state(false);
 
-  readonly soundCount = $derived(this.activeMedia.filter(m => m.type === 'sound').length);
-  readonly ambianceCount = $derived(this.activeMedia.filter(m => m.type === 'music').length);
+  readonly soundCount = $derived(this.activeMedia.filter(m => m.tag !== 'room_ambience').length);
+  readonly ambianceCount = $derived(this.activeMedia.filter(m => m.tag === 'room_ambience').length);
 
   addMedia(media: ActiveMedia): void {
     this.activeMedia = [...this.activeMedia, media];

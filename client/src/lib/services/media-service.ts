@@ -78,7 +78,7 @@ class MediaService {
     }
 
     // Map GMCP options to engine PlayOptions
-    const effectiveVolume = this.calculateVolume(volume, type);
+    const effectiveVolume = this.calculateVolume(volume, options.tag);
     const offset = options.start ? options.start / 1000 : undefined;
     const duration =
       options.finish && options.start !== undefined
@@ -151,7 +151,7 @@ class MediaService {
   /** Recompute effective volumes for all active media (after user changes master/category volumes or mute). */
   updateVolumes(): void {
     for (const m of mediaState.activeMedia) {
-      m.playback.volume = this.calculateVolume(m.volume, m.type);
+      m.playback.volume = this.calculateVolume(m.volume, m.tag);
     }
   }
 
@@ -168,9 +168,9 @@ class MediaService {
     return baseUrl.endsWith('/') ? baseUrl + name : baseUrl + '/' + name;
   }
 
-  private calculateVolume(mediaVolume: number, type: MediaType): number {
+  private calculateVolume(mediaVolume: number, tag?: string): number {
     if (mediaState.muted) return 0;
-    const categoryVolume = type === 'music' ? mediaState.musicVolume : mediaState.soundVolume;
+    const categoryVolume = tag === 'room_ambience' ? mediaState.ambianceVolume : mediaState.soundVolume;
     return (mediaVolume / 100) * (categoryVolume / 100) * (mediaState.masterVolume / 100);
   }
 

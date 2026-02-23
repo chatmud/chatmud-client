@@ -7,6 +7,7 @@ import type {
   EditorPreferences,
   DisplayPreferences,
   KeyboardPreferences,
+  SoundPreferences,
 } from '../types/preferences';
 // Note: Don't import from services yet - we'll call persistence functions from the component layer
 
@@ -41,11 +42,13 @@ function getDefaults(): PreferencesSchema {
     },
     editor: { confirmOnSend: true, fontSize: 14, tabSize: 2, wordWrap: true },
     keyboard: { navigationKeyScheme: 'jkli' },
+    sound: { masterVolume: 60, soundVolume: 60, ambianceVolume: 60 },
     display: {
       autoLinkUrls: true,
       timestamps: false,
       maxOutputLines: 1000,
       confirmDisplayUrl: true,
+      debugGmcp: false,
     },
   };
 }
@@ -66,6 +69,7 @@ function loadFromStorage(): PreferencesSchema {
       tts: { ...defaults.tts, ...(parsed.tts || {}) },
       editor: { ...defaults.editor, ...(parsed.editor || {}) },
       keyboard: { ...defaults.keyboard, ...(parsed.keyboard || {}) },
+      sound: { ...defaults.sound, ...(parsed.sound || {}) },
       display: { ...defaults.display, ...(parsed.display || {}) },
       version: CURRENT_VERSION,
     };
@@ -100,6 +104,9 @@ class PreferencesState {
   }
   get keyboard() {
     return this._prefs.keyboard;
+  }
+  get sound() {
+    return this._prefs.sound;
   }
   get display() {
     return this._prefs.display;
@@ -142,6 +149,11 @@ class PreferencesState {
 
   updateKeyboard(keyboard: Partial<KeyboardPreferences>): void {
     this._prefs = { ...this._prefs, keyboard: { ...this._prefs.keyboard, ...keyboard } };
+    this.save();
+  }
+
+  updateSound(sound: Partial<SoundPreferences>): void {
+    this._prefs = { ...this._prefs, sound: { ...this._prefs.sound, ...sound } };
     this.save();
   }
 
