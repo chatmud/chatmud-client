@@ -66,7 +66,36 @@
     }
   }
 
+  function toggleConnectDisconnect() {
+    if (connectionState.status === 'disconnected') {
+      handleConnect();
+    } else {
+      handleDisconnect();
+    }
+  }
+
   function handleGlobalKeydown(e: KeyboardEvent) {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      switch (e.key) {
+        case 'v':
+          e.preventDefault();
+          toggleVolume();
+          return;
+        case ',':
+          e.preventDefault();
+          uiState.togglePreferences();
+          return;
+        case 'm':
+          e.preventDefault();
+          toggleMute();
+          return;
+        case 'k':
+          e.preventDefault();
+          toggleConnectDisconnect();
+          return;
+      }
+    }
+
     if (e.key === 'Escape') {
       if (volumeOpen) {
         volumeOpen = false;
