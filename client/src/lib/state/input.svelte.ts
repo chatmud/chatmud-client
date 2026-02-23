@@ -1,5 +1,5 @@
 const HISTORY_KEY = 'chatmud:commandHistory';
-const MAX_HISTORY = 500;
+const MAX_HISTORY = 10000;
 
 function loadHistory(): string[] {
   try {
