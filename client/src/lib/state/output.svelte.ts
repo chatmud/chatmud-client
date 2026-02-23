@@ -119,7 +119,7 @@ class OutputState {
     this.onAssertive?.(text);
   }
 
-  registerAssertiveCallback(callback: (text: string) => void): void {
+  registerAssertiveCallback(callback: ((text: string) => void) | null): void {
     this.onAssertive = callback;
   }
 

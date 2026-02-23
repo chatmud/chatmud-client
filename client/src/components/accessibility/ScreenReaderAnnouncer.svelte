@@ -22,6 +22,7 @@
   });
 
   onDestroy(() => {
+    outputState.registerAssertiveCallback(null);
     assertiveLog = null;
     politeLog = null;
   });
