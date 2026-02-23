@@ -28,6 +28,7 @@ class OutputState {
   private nextLineId = 0;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private onNewMessage: ((text: string) => void) | null = null;
+  private onAssertive: ((text: string) => void) | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -84,13 +85,21 @@ class OutputState {
     this.debouncedSave();
   }
 
-  addHtmlLine(html: string, caption?: string): void {
-    const text = caption || html.replace(/<[^>]*>/g, '');
+  addHtmlLine(html: string, caption?: string, contentId?: string): void {
+    let text: string;
+    if (caption) {
+      text = caption;
+    } else {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      text = tmp.textContent || '';
+    }
     const line: OutputLine = {
       id: this.nextLineId++,
       spans: [],
       timestamp: Date.now(),
       html,
+      contentId,
     };
     this.lines = [...this.lines, line];
     if (this.lines.length > this.maxLines) {
@@ -100,12 +109,18 @@ class OutputState {
       this.pendingAnnouncementText = [...this.pendingAnnouncementText, text];
       ttsEngine.speakLine(text);
     }
+    this.onNewMessage?.(text);
     this.debouncedSave();
   }
 
-  /** Push a message to the screen reader live region without adding an output line. */
+  /** Push a message to the screen reader live region without adding an output line.
+   *  Uses assertive priority so it interrupts current speech immediately. */
   announce(text: string): void {
-    this.pendingAnnouncementText = [...this.pendingAnnouncementText, text];
+    this.onAssertive?.(text);
+  }
+
+  registerAssertiveCallback(callback: (text: string) => void): void {
+    this.onAssertive = callback;
   }
 
   consumeAnnouncements(): string[] {

@@ -1,60 +1,59 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { outputState } from '../../lib/state/output.svelte';
 
-  let liveEl: HTMLDivElement | null = null;
-  let containerEl: HTMLDivElement | undefined = $state(undefined);
-  let clearTimer: ReturnType<typeof setTimeout> | null = null;
-  let textBuffer = '';
+  const CLEAR_DELAY = 7000;
 
-  const CLEAR_DELAY = 1000;
+  let containerEl: HTMLDivElement | undefined = $state(undefined);
+  let assertiveLog: HTMLElement | null = null;
+  let politeLog: HTMLElement | null = null;
 
   onMount(() => {
     if (!containerEl) return;
 
-    // Create the live region dynamically after mount, matching svelte-mud's
-    // approach. Screen readers register live regions at parse time; creating
-    // the element after mount avoids stale-region quirks.
-    liveEl = document.createElement('div');
-    liveEl.setAttribute('aria-live', 'polite');
-    liveEl.setAttribute('aria-atomic', 'true');
-    liveEl.className = 'sr-only';
-    containerEl.appendChild(liveEl);
+    assertiveLog = createLog('assertive');
+    politeLog = createLog('polite');
+    containerEl.appendChild(assertiveLog);
+    containerEl.appendChild(politeLog);
+
+    outputState.registerAssertiveCallback(announceAssertive);
   });
 
   onDestroy(() => {
-    if (clearTimer !== null) clearTimeout(clearTimer);
-    if (liveEl?.parentNode) liveEl.parentNode.removeChild(liveEl);
-    liveEl = null;
+    assertiveLog = null;
+    politeLog = null;
   });
 
-  function flush(): void {
-    if (!liveEl || !textBuffer.trim()) return;
-
-    if (clearTimer !== null) {
-      clearTimeout(clearTimer);
-      clearTimer = null;
-    }
-
-    liveEl.textContent = textBuffer;
-    textBuffer = '';
-
-    clearTimer = setTimeout(() => {
-      if (liveEl) liveEl.textContent = '';
-      clearTimer = null;
-    }, CLEAR_DELAY);
+  function createLog(ariaLive: 'assertive' | 'polite'): HTMLElement {
+    const node = document.createElement('div');
+    node.setAttribute('role', 'log');
+    node.setAttribute('aria-live', ariaLive);
+    node.setAttribute('aria-relevant', 'additions');
+    node.className = 'sr-only';
+    return node;
   }
 
+  function appendMessage(log: HTMLElement | null, text: string): void {
+    if (!log) return;
+    const node = document.createElement('div');
+    node.textContent = text;
+    log.appendChild(node);
+    setTimeout(() => node.remove(), CLEAR_DELAY);
+  }
+
+  function announceAssertive(text: string): void {
+    appendMessage(assertiveLog, text);
+  }
+
+  // Polite announcements for MUD output
   $effect(() => {
     const pending = outputState.pendingAnnouncementText;
     if (pending.length === 0) return;
 
-    const texts = outputState.consumeAnnouncements();
+    const texts = untrack(() => outputState.consumeAnnouncements());
     for (const text of texts) {
-      textBuffer += (textBuffer ? ' ' : '') + text;
+      appendMessage(politeLog, text);
     }
-
-    flush();
   });
 </script>
 
