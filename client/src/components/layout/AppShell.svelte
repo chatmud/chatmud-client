@@ -54,12 +54,14 @@
   }
 
   function handleGlobalKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !uiState.preferencesOpen && !uiState.editorOpen) {
       mediaService.handleStop({});
       ttsEngine.cancel();
     }
   }
 </script>
+
+<svelte:window onkeydown={handleGlobalKeydown} />
 
 <!-- Toolbar -->
 <header class="toolbar">
