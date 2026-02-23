@@ -19,6 +19,7 @@ export interface AccessibilityPreferences {
   batchAnnouncements: boolean;
   focusRing: boolean;
   reducedMotion: boolean;
+  ariaLiveRegions: boolean;
 }
 
 export type TtsActivationMode = 'always' | 'focused' | 'unfocused';

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from 'svelte';
   import { outputState } from '../../lib/state/output.svelte';
+  import { preferencesState } from '../../lib/state/preferences.svelte';
 
   const CLEAR_DELAY = 7000;
 
   let containerEl: HTMLDivElement | undefined = $state(undefined);
   let assertiveLog: HTMLElement | null = null;
   let politeLog: HTMLElement | null = null;
+  let enabled = $derived(preferencesState.accessibility.ariaLiveRegions);
 
   onMount(() => {
     if (!containerEl) return;
@@ -42,6 +44,7 @@
   }
 
   function announceAssertive(text: string): void {
+    if (!enabled) return;
     appendMessage(assertiveLog, text);
   }
 
@@ -51,6 +54,7 @@
     if (pending.length === 0) return;
 
     const texts = untrack(() => outputState.consumeAnnouncements());
+    if (!enabled) return;
     for (const text of texts) {
       appendMessage(politeLog, text);
     }

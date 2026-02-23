@@ -26,6 +26,10 @@
   function handleReducedMotionChange(checked: boolean): void {
     preferencesState.updateAccessibility({ reducedMotion: checked });
   }
+
+  function handleAriaLiveChange(checked: boolean): void {
+    preferencesState.updateAccessibility({ ariaLiveRegions: checked });
+  }
 </script>
 
 <fieldset class="settings-section">
@@ -61,6 +65,14 @@
       label="Reduced motion"
       checked={preferencesState.accessibility.reducedMotion}
       onchange={handleReducedMotionChange}
+    />
+  </div>
+
+  <div class="setting-row">
+    <Toggle
+      label="Aria live regions"
+      checked={preferencesState.accessibility.ariaLiveRegions}
+      onchange={handleAriaLiveChange}
     />
   </div>
 </fieldset>

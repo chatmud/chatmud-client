@@ -29,6 +29,7 @@ function getDefaults(): PreferencesSchema {
       batchAnnouncements: true,
       focusRing: true,
       reducedMotion: false,
+      ariaLiveRegions: true,
     },
     tts: {
       enabled: false,
