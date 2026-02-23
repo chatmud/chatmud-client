@@ -25,9 +25,6 @@ function getDefaults(): PreferencesSchema {
     colors: { theme: 'dark', ansiOverrides: {} },
     proxy: { persistenceTimeout: 600000, maxBufferLines: 1000 },
     accessibility: {
-      verbosity: 'medium',
-      batchAnnouncements: true,
-      focusRing: true,
       reducedMotion: false,
       ariaLiveRegions: true,
     },

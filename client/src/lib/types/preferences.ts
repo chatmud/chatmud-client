@@ -15,9 +15,6 @@ export interface ProxyPreferences {
 }
 
 export interface AccessibilityPreferences {
-  verbosity: 'low' | 'medium' | 'high';
-  batchAnnouncements: boolean;
-  focusRing: boolean;
   reducedMotion: boolean;
   ariaLiveRegions: boolean;
 }

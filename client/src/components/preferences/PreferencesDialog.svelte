@@ -3,19 +3,17 @@
   import Modal from '../common/Modal.svelte';
   import FontSettings from './FontSettings.svelte';
   import ColorSettings from './ColorSettings.svelte';
-  import TTSSettings from './TTSSettings.svelte';
   import ProxySettings from './ProxySettings.svelte';
   import AccessibilitySettings from './AccessibilitySettings.svelte';
   import AboutInfo from './AboutInfo.svelte';
   import DebugSettings from './DebugSettings.svelte';
   import ShortcutKeys from './ShortcutKeys.svelte';
 
-  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'shortcuts' | 'debug' | 'about';
+  type SectionId = 'font' | 'colors' | 'proxy' | 'accessibility' | 'shortcuts' | 'debug' | 'about';
 
   const sections: { id: SectionId; label: string }[] = [
     { id: 'font', label: 'Font' },
     { id: 'colors', label: 'Colors' },
-    { id: 'tts', label: 'TTS' },
     { id: 'proxy', label: 'Proxy' },
     { id: 'accessibility', label: 'Accessibility' },
     { id: 'shortcuts', label: 'Shortcuts' },
@@ -115,8 +113,6 @@
           <FontSettings />
         {:else if section.id === 'colors'}
           <ColorSettings />
-        {:else if section.id === 'tts'}
-          <TTSSettings />
         {:else if section.id === 'proxy'}
           <ProxySettings />
         {:else if section.id === 'accessibility'}
