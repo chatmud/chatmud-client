@@ -9,7 +9,24 @@ import type {
 import { mediaState } from '../state/media.svelte';
 import { audioEngine } from './audio-engine-instance';
 import { generateId } from '../utils/generate-id';
+import { preferencesState } from '../state/preferences.svelte';
 class MediaService {
+  private savedVolume: number | null = null;
+
+  constructor() {
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+  }
+
+  private onVisibilityChange = (): void => {
+    if (document.hidden && preferencesState.sound.muteInBackground) {
+      this.savedVolume = audioEngine.volume;
+      audioEngine.volume = 0;
+    } else if (!document.hidden && this.savedVolume !== null) {
+      audioEngine.volume = this.savedVolume;
+      this.savedVolume = null;
+    }
+  };
+
   /** Set the default base URL for media files. */
   handleDefault(options: MediaDefaultOptions): void {
     mediaState.defaultUrl = options.url;

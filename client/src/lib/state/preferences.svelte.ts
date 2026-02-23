@@ -40,7 +40,7 @@ function getDefaults(): PreferencesSchema {
     },
     editor: { confirmOnSend: true, fontSize: 14, tabSize: 2, wordWrap: true },
     keyboard: { navigationKeyScheme: 'jkli' },
-    sound: { masterVolume: 60, soundVolume: 60, ambianceVolume: 60 },
+    sound: { masterVolume: 60, soundVolume: 60, ambianceVolume: 60, muteInBackground: true },
     display: {
       autoLinkUrls: true,
       timestamps: false,

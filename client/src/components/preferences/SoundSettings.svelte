@@ -34,6 +34,17 @@
       <span class="vol-value">{preferencesState.sound[key]}%</span>
     </div>
   {/each}
+
+  <div class="bg-mute-row">
+    <label class="bg-mute-label">
+      <input
+        type="checkbox"
+        checked={preferencesState.sound.muteInBackground}
+        onchange={(e) => preferencesState.updateSound({ muteInBackground: (e.target as HTMLInputElement).checked })}
+      />
+      Mute when in background
+    </label>
+  </div>
 </div>
 
 <style>
@@ -76,5 +87,20 @@
     min-width: 32px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+
+  .bg-mute-row {
+    margin-top: 4px;
+    border-top: 1px solid var(--border, #333);
+    padding-top: 8px;
+  }
+
+  .bg-mute-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
   }
 </style>

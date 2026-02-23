@@ -62,6 +62,7 @@ export interface SoundPreferences {
   masterVolume: number;     // 0-100
   soundVolume: number;      // 0-100
   ambianceVolume: number;   // 0-100
+  muteInBackground: boolean;
 }
 
 export interface PreferencesSchema {
