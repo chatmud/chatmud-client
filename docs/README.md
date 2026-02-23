@@ -109,4 +109,4 @@ proxy/           WebSocket-to-Telnet proxy
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[AGPL-3.0](license)
