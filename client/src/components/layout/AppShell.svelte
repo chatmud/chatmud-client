@@ -93,6 +93,10 @@
           e.preventDefault();
           toggleConnectDisconnect();
           return;
+        case '?':
+          e.preventDefault();
+          uiState.openPreferencesTo('shortcuts');
+          return;
       }
     }
 

@@ -8,8 +8,9 @@
   import AccessibilitySettings from './AccessibilitySettings.svelte';
   import AboutInfo from './AboutInfo.svelte';
   import DebugSettings from './DebugSettings.svelte';
+  import ShortcutKeys from './ShortcutKeys.svelte';
 
-  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'debug' | 'about';
+  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'shortcuts' | 'debug' | 'about';
 
   const sections: { id: SectionId; label: string }[] = [
     { id: 'font', label: 'Font' },
@@ -17,12 +18,23 @@
     { id: 'tts', label: 'TTS' },
     { id: 'proxy', label: 'Proxy' },
     { id: 'accessibility', label: 'Accessibility' },
+    { id: 'shortcuts', label: 'Shortcuts' },
     { id: 'debug', label: 'Debug' },
     { id: 'about', label: 'About' },
   ];
 
   let activeSection = $state<SectionId>('font');
   let focusedIndex = $state(0);
+
+  $effect(() => {
+    if (uiState.preferencesSection && uiState.preferencesOpen) {
+      const target = uiState.preferencesSection as SectionId;
+      if (sections.some(s => s.id === target)) {
+        switchSection(target);
+      }
+      uiState.preferencesSection = null;
+    }
+  });
 
   function handleClose(): void {
     uiState.preferencesOpen = false;
@@ -109,6 +121,8 @@
           <ProxySettings />
         {:else if section.id === 'accessibility'}
           <AccessibilitySettings />
+        {:else if section.id === 'shortcuts'}
+          <ShortcutKeys />
         {:else if section.id === 'debug'}
           <DebugSettings />
         {:else if section.id === 'about'}

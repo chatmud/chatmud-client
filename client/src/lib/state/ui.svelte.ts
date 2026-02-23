@@ -2,6 +2,7 @@ class UiState {
   sidebarOpen = $state(false);
   editorOpen = $state(false);
   preferencesOpen = $state(false);
+  preferencesSection = $state<string | null>(null);
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
@@ -13,6 +14,12 @@ class UiState {
 
   togglePreferences(): void {
     this.preferencesOpen = !this.preferencesOpen;
+    if (!this.preferencesOpen) this.preferencesSection = null;
+  }
+
+  openPreferencesTo(section: string): void {
+    this.preferencesSection = section;
+    this.preferencesOpen = true;
   }
 }
 
