@@ -75,29 +75,45 @@
   }
 
   function handleGlobalKeydown(e: KeyboardEvent) {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    const alt = e.altKey && !e.ctrlKey && !e.metaKey;
+    const cmd = e.metaKey && !e.ctrlKey && !e.altKey;
+
+    // Alt-only shortcuts (Cmd+V/M conflict with paste/minimize)
+    if (alt && !e.shiftKey) {
       switch (e.key) {
         case 'v':
           e.preventDefault();
           toggleVolume();
           return;
-        case ',':
-          e.preventDefault();
-          uiState.togglePreferences();
-          return;
         case 'm':
           e.preventDefault();
           toggleMute();
           return;
+      }
+    }
+
+    // Alt or Cmd shortcuts
+    if ((alt || cmd) && !e.shiftKey) {
+      switch (e.key) {
         case 'k':
           e.preventDefault();
           toggleConnectDisconnect();
           return;
-        case '?':
-          e.preventDefault();
-          uiState.openPreferencesTo('shortcuts');
-          return;
       }
+    }
+
+    // Alt-only (Cmd+, conflicts with browser settings)
+    if (alt && !e.shiftKey && e.key === ',') {
+      e.preventDefault();
+      uiState.togglePreferences();
+      return;
+    }
+
+    // Alt+? or Cmd+? (requires shift for ?)
+    if ((alt || cmd) && e.key === '?') {
+      e.preventDefault();
+      uiState.openPreferencesTo('shortcuts');
+      return;
     }
 
     if (e.key === 'Escape') {
