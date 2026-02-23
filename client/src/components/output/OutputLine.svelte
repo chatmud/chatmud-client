@@ -3,6 +3,29 @@
 
   let { line, focused = false, index = 0 } = $props<{ line: OutputLine; focused?: boolean; index?: number }>();
 
+  const URL_RE = /https?:\/\/[^\s<>"'\`)}\]]+/g;
+
+  /**
+   * Split text into alternating plain-text and URL segments.
+   */
+  function splitUrls(text: string): { text: string; url?: string }[] {
+    const segments: { text: string; url?: string }[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    URL_RE.lastIndex = 0;
+    while ((match = URL_RE.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: text.slice(lastIndex, match.index) });
+      }
+      segments.push({ text: match[0], url: match[0] });
+      lastIndex = URL_RE.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      segments.push({ text: text.slice(lastIndex) });
+    }
+    return segments.length ? segments : [{ text }];
+  }
+
   /**
    * Convert an AnsiState into a CSS style string.
    */
@@ -44,11 +67,15 @@
   {:else}
     {#each line.spans as span, i (i)}
       {@const style = spanStyle(span.style)}
-      {#if style}
-        <span {style}>{span.text}</span>
-      {:else}
-        <span>{span.text}</span>
-      {/if}
+      {#each splitUrls(span.text) as seg}
+        {#if seg.url}
+          <a href={seg.url} target="_blank" rel="noopener noreferrer" {style}>{seg.text}</a>
+        {:else if style}
+          <span {style}>{seg.text}</span>
+        {:else}
+          <span>{seg.text}</span>
+        {/if}
+      {/each}
     {/each}
     {#if line.spans.length === 0}
       <span>&nbsp;</span>
@@ -63,6 +90,11 @@
     min-height: 1em;
     transition: background-color 0.1s ease;
     scroll-margin: 20px;
+  }
+
+  .output-line a {
+    color: var(--link-color, #6cb4ee);
+    text-decoration: underline;
   }
 
   .system-line {
