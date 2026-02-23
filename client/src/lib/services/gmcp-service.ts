@@ -40,7 +40,12 @@ class GmcpService {
   // Called by telnet-negotiator when a GMCP subnegotiation is received
   handleMessage(module: string, data: unknown): void {
     if (preferencesState.display.debugGmcp) {
-      const json = typeof data === 'object' ? JSON.stringify(data) : String(data);
+      let json: string;
+      try {
+        json = typeof data === 'object' ? JSON.stringify(data) : String(data);
+      } catch {
+        json = '[unserializable]';
+      }
       outputState.addSystemLine(`GMCP ${module} ${json}`);
     }
 
