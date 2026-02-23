@@ -4,7 +4,7 @@ import { gmcpState } from '../state/gmcp.svelte';
 import { channelHistoryState } from '../state/channel-history.svelte';
 import { outputState } from '../state/output.svelte';
 import { mediaService } from './media-service';
-import type { ClientRender } from '../types/gmcp';
+import type { ClientRenderAdd } from '../types/gmcp';
 import type {
   MediaDefaultOptions,
   MediaLoadOptions,
@@ -20,7 +20,7 @@ const DOMPURIFY_CONFIG = {
     'ul', 'ol', 'li',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
     'a', 'img',
-    'strong', 'em', 'code', 'pre', 'blockquote',
+    'strong', 'em', 'del', 'code', 'pre', 'blockquote',
     'span', 'div',
     'dl', 'dt', 'dd',
   ],
@@ -73,8 +73,8 @@ class GmcpService {
       case 'Client.Media.Stop':
         mediaService.handleStop(obj as unknown as MediaStopOptions);
         return;
-      case 'Client.Render': {
-        const render = obj as ClientRender;
+      case 'Client.Render.Add': {
+        const render = obj as ClientRenderAdd;
         let rawHtml: string | undefined;
         if (typeof render.html === 'string') {
           rawHtml = render.html;
@@ -84,7 +84,8 @@ class GmcpService {
         if (rawHtml) {
           const sanitized = DOMPurify.sanitize(rawHtml, DOMPURIFY_CONFIG);
           const caption = typeof render.caption === 'string' ? render.caption : undefined;
-          outputState.addHtmlLine(sanitized, caption);
+          const contentId = typeof render.id === 'string' ? render.id : undefined;
+          outputState.addHtmlLine(sanitized, caption, contentId);
         }
         return;
       }

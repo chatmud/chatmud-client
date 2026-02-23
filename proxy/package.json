@@ -1,6 +1,7 @@
 {
   "name": "chatmud-proxy-server",
   "version": "1.0.0",
+  "license": "AGPL-3.0-only",
   "description": "WebSocket proxy server with connection persistence for ChatMUD",
   "main": "dist/index.js",
   "scripts": {

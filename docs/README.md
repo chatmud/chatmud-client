@@ -87,7 +87,7 @@ The client negotiates these [GMCP](https://www.gammon.com.au/gmcp) packages:
 | `Room` | Room name, area, exits in the sidebar; player enter/leave tracking |
 | `Comm.Channel` | Channel message history with buffer switching; channel list |
 | `Client.Media` | Sound/music playback via Web Audio (volume, fading, looping, priority) |
-| `Client.Render` | Inline rich content (HTML or Markdown) rendered in the scrollback ([spec](/docs/gmcp/client-render.md)) |
+| `Client.Render` | Inline rich content (HTML or Markdown) rendered in the scrollback via `Client.Render.Add` ([spec](/docs/gmcp/client-render.md)) |
 
 ## Project layout
 

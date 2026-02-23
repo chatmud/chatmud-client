@@ -60,10 +60,11 @@ export interface CharItemUpdate {
 
 // Client.Render package
 
-export interface ClientRender {
+export interface ClientRenderAdd {
   html?: string;
   markdown?: string;
   caption?: string;
+  id?: string;
   [key: string]: unknown;
 }
 

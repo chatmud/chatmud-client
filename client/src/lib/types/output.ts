@@ -25,5 +25,6 @@ export interface OutputLine {
   timestamp: number;
   isPrompt?: boolean;
   isSystem?: boolean;
-  html?: string;       // sanitized HTML content from Client.Render
+  html?: string;       // sanitized HTML content from Client.Render.Add
+  contentId?: string;  // server-assigned ID for future remove/replace
 }

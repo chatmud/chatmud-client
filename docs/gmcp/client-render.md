@@ -22,22 +22,22 @@ Client.Render
 
 ## Specification
 
-### Client.Render
+### Client.Render.Add
 
-The server sends a `Client.Render` message containing rich content for the client to display inline in the output scrollback.
+The server sends a `Client.Render.Add` message containing rich content for the client to display inline in the output scrollback.
 
 The client MUST sanitize all HTML before rendering to prevent cross-site scripting (XSS) attacks. Script tags, event handler attributes, and other dangerous content MUST be stripped.
 
 #### Syntax
 
 ```json
-Client.Render {
+Client.Render.Add {
   "html": "<h2>Help: Movement</h2><p>Use <code>north</code>, <code>south</code>, <code>east</code>, or <code>west</code> to move.</p>"
 }
 ```
 
 ```json
-Client.Render {
+Client.Render.Add {
   "markdown": "## Help: Movement\n\nUse `north`, `south`, `east`, or `west` to move.\n\n| Command | Direction |\n|---|---|\n| `n` | North |\n| `s` | South |"
 }
 ```
@@ -49,11 +49,11 @@ Client.Render {
 | Maybe | `html` | string | | An HTML fragment to render inline in the output. At least one of `html` or `markdown` MUST be present. If both are provided, `html` takes precedence. |
 | Maybe | `markdown` | string | | A Markdown string to be parsed into HTML and rendered inline. Supports GitHub Flavored Markdown (tables, strikethrough, fenced code blocks). Used when `html` is not present. |
 | No | `caption` | string | | A plain-text alternative for screen readers and text-to-speech engines. If omitted, the client derives a caption automatically from the rendered HTML's text content. |
-| No | `id` | string | | A server-assigned identifier for this content. Reserved for future use -- will allow the server to remove or replace previously rendered content by ID. |
+| No | `id` | string | | A server-assigned identifier for this content. Used by `Client.Render.Remove` and `Client.Render.Replace` to reference previously rendered content. |
 
 #### Allowed HTML Elements
 
-Clients SHOULD support at minimum the following HTML elements when rendering `Client.Render` content:
+Clients SHOULD support at minimum the following HTML elements when rendering `Client.Render.Add` content:
 
 - Headings: `h1`, `h2`, `h3`, `h4`, `h5`, `h6`
 - Block content: `p`, `br`, `hr`, `blockquote`, `pre`, `div`
@@ -91,7 +91,7 @@ When a `caption` is provided, the client SHOULD use it for screen reader announc
 ### Help Page
 
 ```json
-Client.Render {
+Client.Render.Add {
   "html": "<h2>Help: Combat</h2><p>Attack a target with <code>kill &lt;target&gt;</code>.</p><h3>Commands</h3><dl><dt><code>kill &lt;target&gt;</code></dt><dd>Initiate combat with the target.</dd><dt><code>flee</code></dt><dd>Attempt to escape from combat.</dd></dl>"
 }
 ```
@@ -99,7 +99,7 @@ Client.Render {
 ### Table via Markdown
 
 ```json
-Client.Render {
+Client.Render.Add {
   "markdown": "## Skills\n\n| Skill | Level | Progress |\n|---|---|---|\n| Swordsmanship | 5 | 73% |\n| Archery | 3 | 41% |\n| Stealth | 7 | 12% |",
   "caption": "Skills: Swordsmanship level 5, 73 percent. Archery level 3, 41 percent. Stealth level 7, 12 percent."
 }
@@ -108,7 +108,7 @@ Client.Render {
 ### Formatted Room Description
 
 ```json
-Client.Render {
+Client.Render.Add {
   "html": "<h3>The Grand Hall</h3><p>Towering marble columns line the vast hall, their surfaces etched with <em>ancient runes</em> that pulse with a faint blue light. A <a href='https://example.com/map#grand-hall'>map</a> of the kingdom hangs on the eastern wall.</p>",
   "id": "room-desc"
 }
@@ -118,7 +118,7 @@ Client.Render {
 
 | Version | Changes |
 |---------|---------|
-| 1 | Initial specification. HTML and Markdown rendering with caption support. |
+| 1 | Initial specification. `Client.Render.Add` message with HTML and Markdown rendering, caption support, and content IDs. |
 
 ## Implementation Notes
 
@@ -128,17 +128,18 @@ Servers SHOULD prefer sending `markdown` when the content can be expressed in Ma
 
 The `caption` field is optional. The client automatically extracts plain text from the rendered HTML for screen readers and TTS. Only provide `caption` when the auto-derived text would be confusing (e.g., complex tables, content where reading order matters).
 
-The `id` field is reserved for future use. Servers that plan to later remove or replace rendered content SHOULD include a stable identifier now. A future version of this spec will define `Client.Render.Remove` and `Client.Render.Replace` messages that reference this ID.
+The `id` field allows content to be referenced by future `Client.Render.Remove` and `Client.Render.Replace` messages. Servers that plan to later remove or replace rendered content SHOULD include a stable identifier.
 
-### Client (ChatMUD-Web)
+### Client
 
-The ChatMUD-Web client implements `Client.Render` as follows:
+- Clients SHOULD use a whitelist-based HTML sanitizer (e.g., [DOMPurify](https://github.com/cure53/DOMPurify)) that only permits the tags and attributes listed in this spec.
+- Clients SHOULD parse Markdown using a library that supports GitHub Flavored Markdown (tables, strikethrough, fenced code blocks).
+- Clients SHOULD force links to open in a new tab with `rel="noopener noreferrer"`.
+- When `caption` is present, clients SHOULD use it for assistive technology output. Otherwise, clients SHOULD derive a plain-text caption from the rendered HTML's `textContent`.
 
-- HTML sanitization: [DOMPurify](https://github.com/cure53/DOMPurify) with a strict whitelist of allowed tags and attributes
-- Markdown parsing: [marked](https://github.com/markedjs/marked) with GitHub Flavored Markdown support
-- Link handling: all links forced to `target="_blank"` with `rel="noopener noreferrer"` via DOMPurify hooks
-- Rendering: sanitized HTML is injected via Svelte's `{@html}` directive inside a styled wrapper
-- Accessibility: `caption` (or `textContent` fallback) announced via the screen reader live region and TTS engine
+## Reference Implementation
+
+The [ChatMUD-Web](https://github.com/chatmud/chatmud-client) client implements `Client.Render.Add` using [DOMPurify](https://github.com/cure53/DOMPurify) for HTML sanitization, [marked](https://github.com/markedjs/marked) for Markdown parsing, and Svelte's `{@html}` directive for rendering.
 
 ## Authors
 

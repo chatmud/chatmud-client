@@ -59,6 +59,12 @@ export interface KeyboardPreferences {
   navigationKeyScheme: NavigationKeyScheme;
 }
 
+export interface SoundPreferences {
+  masterVolume: number;     // 0-100
+  soundVolume: number;      // 0-100
+  ambianceVolume: number;   // 0-100
+}
+
 export interface PreferencesSchema {
   version: number;
   font: FontPreferences;
@@ -69,4 +75,5 @@ export interface PreferencesSchema {
   editor: EditorPreferences;
   display: DisplayPreferences;
   keyboard: KeyboardPreferences;
+  sound: SoundPreferences;
 }

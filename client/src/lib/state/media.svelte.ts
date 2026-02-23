@@ -3,13 +3,13 @@ import type { ActiveMedia } from '../types/media';
 class MediaState {
   activeMedia = $state<ActiveMedia[]>([]);
   defaultUrl = $state<string | null>(null);
-  masterVolume = $state(100);      // 0-100 master volume
-  soundVolume = $state(100);       // 0-100 sound category volume
-  musicVolume = $state(100);       // 0-100 music category volume
+  masterVolume = $state(60);       // 0-100 master volume
+  soundVolume = $state(60);        // 0-100 sound category volume
+  ambianceVolume = $state(60);     // 0-100 ambiance category volume
   muted = $state(false);
 
   readonly soundCount = $derived(this.activeMedia.filter(m => m.type === 'sound').length);
-  readonly musicCount = $derived(this.activeMedia.filter(m => m.type === 'music').length);
+  readonly ambianceCount = $derived(this.activeMedia.filter(m => m.type === 'music').length);
 
   addMedia(media: ActiveMedia): void {
     this.activeMedia = [...this.activeMedia, media];
