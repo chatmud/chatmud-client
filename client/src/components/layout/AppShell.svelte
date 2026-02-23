@@ -85,7 +85,13 @@
 <!-- Toolbar -->
 <header class="toolbar">
   <div class="toolbar-left">
-    <img src="/logo.png" alt="" class="toolbar-logo" aria-hidden="true" />
+    <svg class="toolbar-logo" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.48 2 12" stroke="var(--brand-light)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M22 12c0 5.52-4.48 10-10 10" stroke="var(--brand-light)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M12 5.5A6.5 6.5 0 0118.5 12" stroke="var(--brand-dark)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M5.5 12A6.5 6.5 0 0112 18.5" stroke="var(--brand-dark)" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="2.5" fill="var(--brand-mid)"/>
+    </svg>
     <span class="toolbar-title">
       <span class="title-chat">CHAT</span><span class="title-mud">MUD</span>
     </span>
@@ -190,7 +196,7 @@
   .toolbar-logo {
     width: 24px;
     height: 24px;
-    object-fit: contain;
+    flex-shrink: 0;
   }
 
   .toolbar-title {
