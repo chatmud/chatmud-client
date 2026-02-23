@@ -165,8 +165,8 @@
     {#if showWelcome}
       <div class="welcome">
         <img src="/logo.png" alt="ChatMUD logo" class="welcome-logo" />
-        <p class="welcome-text">Welcome to <strong>ChatMUD</strong></p>
-        <p class="welcome-sub">Click <strong>Connect</strong> to begin your adventure</p>
+        <p class="welcome-text">Connect to <strong>ChatMUD</strong></p>
+        <p class="welcome-sub">Press <strong>Connect</strong> to get started</p>
       </div>
     {:else}
       {#each outputState.lines as line, index (line.id)}
