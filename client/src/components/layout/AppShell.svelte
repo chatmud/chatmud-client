@@ -101,7 +101,7 @@
     // Alt or Cmd shortcuts
     if ((alt || cmd) && !e.shiftKey) {
       switch (e.key) {
-        case 'k':
+        case 'o':
           e.preventDefault();
           toggleConnectDisconnect();
           return;

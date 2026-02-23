@@ -17,7 +17,7 @@
         { keys: 'Alt+V', description: 'Toggle volume panel' },
         { keys: 'Alt+M', description: 'Toggle mute' },
         { keys: 'Alt+,', description: 'Open preferences' },
-        { keys: 'Alt+K / Cmd+K', description: 'Connect / disconnect' },
+        { keys: 'Alt+O / Cmd+O', description: 'Connect / disconnect' },
         { keys: 'Alt+? / Cmd+?', description: 'Show keyboard shortcuts' },
         { keys: 'Escape', description: 'Stop all sounds and TTS' },
       ],
