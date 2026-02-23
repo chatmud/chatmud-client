@@ -15,17 +15,41 @@ class MediaService {
 
   constructor() {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
+    window.addEventListener('blur', this.onBlur);
+    window.addEventListener('focus', this.onFocus);
   }
 
   private onVisibilityChange = (): void => {
-    if (document.hidden && preferencesState.sound.muteInBackground) {
-      this.backgroundMuted = true;
-      audioEngine.volume = 0;
-    } else if (!document.hidden && this.backgroundMuted) {
-      this.backgroundMuted = false;
-      audioEngine.volume = 1;
+    if (document.hidden) {
+      this.muteIfEnabled();
+    } else {
+      this.unmuteIfNeeded();
     }
   };
+
+  private onBlur = (): void => {
+    this.muteIfEnabled();
+  };
+
+  private onFocus = (): void => {
+    this.unmuteIfNeeded();
+  };
+
+  private muteIfEnabled(): void {
+    if (!this.backgroundMuted && preferencesState.sound.muteInBackground) {
+      this.backgroundMuted = true;
+      mediaState.muted = true;
+      this.updateVolumes();
+    }
+  }
+
+  private unmuteIfNeeded(): void {
+    if (this.backgroundMuted) {
+      this.backgroundMuted = false;
+      mediaState.muted = false;
+      this.updateVolumes();
+    }
+  }
 
   /** Set the default base URL for media files. */
   handleDefault(options: MediaDefaultOptions): void {
