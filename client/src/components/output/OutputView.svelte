@@ -199,7 +199,7 @@
 
   .output-view {
     height: 100%;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
     padding: 4px 14px;
     background-color: var(--bg-primary);
