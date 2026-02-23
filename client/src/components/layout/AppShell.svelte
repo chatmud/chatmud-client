@@ -84,35 +84,32 @@
     const alt = e.altKey && !e.ctrlKey && !e.metaKey;
     const cmd = e.metaKey && !e.ctrlKey && !e.altKey;
 
-    // Alt-only shortcuts (Cmd+V/M conflict with paste/minimize)
+    // Alt-only shortcuts — use e.code so macOS Option+key composed chars don't break matching
     if (alt && !e.shiftKey) {
-      switch (e.key) {
-        case 'v':
+      switch (e.code) {
+        case 'KeyV':
           e.preventDefault();
           toggleVolume();
           return;
-        case 'm':
+        case 'KeyM':
           e.preventDefault();
           toggleMute();
+          return;
+        case 'Comma':
+          e.preventDefault();
+          uiState.togglePreferences();
           return;
       }
     }
 
     // Alt or Cmd shortcuts
     if ((alt || cmd) && !e.shiftKey) {
-      switch (e.key) {
-        case 'o':
+      switch (e.code) {
+        case 'KeyO':
           e.preventDefault();
           toggleConnectDisconnect();
           return;
       }
-    }
-
-    // Alt-only (Cmd+, conflicts with browser settings)
-    if (alt && !e.shiftKey && e.key === ',') {
-      e.preventDefault();
-      uiState.togglePreferences();
-      return;
     }
 
     // Alt+? or Cmd+? (requires shift for ?)
