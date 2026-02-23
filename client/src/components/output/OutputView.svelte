@@ -90,7 +90,7 @@
 
     // Redirect printable keystrokes to command input
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      const input = document.getElementById('command-input') as HTMLInputElement | null;
+      const input = document.getElementById('command-input') as HTMLTextAreaElement | null;
       if (input && !input.disabled) {
         input.focus();
         return;

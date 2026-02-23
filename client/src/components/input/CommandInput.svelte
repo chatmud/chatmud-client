@@ -4,10 +4,32 @@
   import { connectionState } from '../../lib/state/connection.svelte';
 
   let inputValue = $state('');
-  let inputElement: HTMLInputElement | undefined = $state(undefined);
+  let inputElement: HTMLTextAreaElement | HTMLInputElement | undefined = $state(undefined);
 
-  let inputType = $derived(inputState.echoMode ? 'text' : 'password');
+  let isPasswordMode = $derived(!inputState.echoMode);
   let isConnected = $derived(connectionState.isConnected);
+
+  function autoResize() {
+    if (!inputElement || !(inputElement instanceof HTMLTextAreaElement)) return;
+    inputElement.style.height = 'auto';
+    const scrollHeight = inputElement.scrollHeight;
+    inputElement.style.height = scrollHeight + 'px';
+    // Switch to scrollable when content exceeds the CSS max-height
+    const maxHeight = parseFloat(getComputedStyle(inputElement).maxHeight);
+    inputElement.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }
+
+  function isCursorOnFirstLine(): boolean {
+    if (!inputElement) return true;
+    const pos = inputElement.selectionStart ?? 0;
+    return !inputValue.substring(0, pos).includes('\n');
+  }
+
+  function isCursorOnLastLine(): boolean {
+    if (!inputElement) return true;
+    const pos = inputElement.selectionStart ?? 0;
+    return !inputValue.substring(pos).includes('\n');
+  }
 
   $effect(() => {
     if (inputElement && isConnected) {
@@ -47,23 +69,35 @@
 
     switch (event.key) {
       case 'Enter': {
+        if (event.shiftKey) {
+          // Allow Shift+Enter to insert a newline
+          return;
+        }
         event.preventDefault();
         const command = inputValue;
         if (command !== '') {
           inputState.addToHistory(command);
         }
-        wsService.sendCommand(command);
+        // Split multiline input and send each line as a separate command
+        const lines = command.split('\n');
+        for (const line of lines) {
+          wsService.sendCommand(line);
+        }
         inputValue = '';
         inputState.currentInput = '';
         inputState.historyIndex = -1;
+        requestAnimationFrame(autoResize);
         break;
       }
       case 'ArrowUp': {
+        // Only navigate history when cursor is on the first line
+        if (!isCursorOnFirstLine()) break;
         event.preventDefault();
         const result = inputState.navigateHistory('up');
         inputValue = result;
         inputState.currentInput = result;
         requestAnimationFrame(() => {
+          autoResize();
           if (inputElement) {
             inputElement.selectionStart = inputElement.value.length;
             inputElement.selectionEnd = inputElement.value.length;
@@ -72,50 +106,71 @@
         break;
       }
       case 'ArrowDown': {
+        // Only navigate history when cursor is on the last line
+        if (!isCursorOnLastLine()) break;
         event.preventDefault();
         const result = inputState.navigateHistory('down');
         inputValue = result;
         inputState.currentInput = result;
+        requestAnimationFrame(autoResize);
         break;
       }
     }
   }
 
   function handleInput(event: Event) {
-    const target = event.target as HTMLInputElement;
+    const target = event.target as HTMLTextAreaElement | HTMLInputElement;
     inputValue = target.value;
     inputState.currentInput = target.value;
     inputState.historyIndex = -1;
+    autoResize();
   }
 </script>
 
 <div class="command-input-bar">
   <span class="input-prompt" aria-hidden="true">&gt;</span>
-  <input
-    id="command-input"
-    class="command-input"
-    type={inputType}
-    value={inputValue}
-    oninput={handleInput}
-    onkeydown={handleKeydown}
-    bind:this={inputElement}
-    placeholder={isConnected ? 'Enter command...' : 'Not connected'}
-    aria-label="Command input"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="off"
-    spellcheck={false}
-    disabled={!isConnected}
-  />
+  {#if isPasswordMode}
+    <input
+      id="command-input"
+      class="command-input"
+      type="password"
+      value={inputValue}
+      oninput={handleInput}
+      onkeydown={handleKeydown}
+      bind:this={inputElement}
+      placeholder={isConnected ? 'Enter command...' : 'Not connected'}
+      aria-label="Command input"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck={false}
+      disabled={!isConnected}
+    />
+  {:else}
+    <textarea
+      id="command-input"
+      class="command-input"
+      value={inputValue}
+      oninput={handleInput}
+      onkeydown={handleKeydown}
+      bind:this={inputElement}
+      placeholder={isConnected ? 'Enter command...' : 'Not connected'}
+      aria-label="Command input"
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck={false}
+      disabled={!isConnected}
+      rows={1}
+    ></textarea>
+  {/if}
 </div>
 
 <style>
   .command-input-bar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     padding: 6px 12px;
     background-color: var(--bg-secondary);
-    height: var(--input-height);
+    min-height: var(--input-height);
     gap: 6px;
   }
 
@@ -124,7 +179,8 @@
     font-size: 16px;
     font-weight: 700;
     flex-shrink: 0;
-    line-height: 1;
+    line-height: var(--line-height);
+    padding-top: 7px;
   }
 
   .command-input {
@@ -139,6 +195,9 @@
     line-height: var(--line-height);
     outline: none; /* Custom focus style below replaces native outline */
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    resize: none;
+    overflow-y: hidden;
+    max-height: 150px;
   }
 
   .command-input:focus {
