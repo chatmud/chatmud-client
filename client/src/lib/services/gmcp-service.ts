@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import { gmcpState } from '../state/gmcp.svelte';
 import { channelHistoryState } from '../state/channel-history.svelte';
 import { outputState } from '../state/output.svelte';
+import { preferencesState } from '../state/preferences.svelte';
 import { mediaService } from './media-service';
 import type { ClientRenderAdd } from '../types/gmcp';
 import type {
@@ -38,6 +39,11 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
 class GmcpService {
   // Called by telnet-negotiator when a GMCP subnegotiation is received
   handleMessage(module: string, data: unknown): void {
+    if (preferencesState.display.debugGmcp) {
+      const json = typeof data === 'object' ? JSON.stringify(data) : String(data);
+      outputState.addSystemLine(`GMCP ${module} ${json}`);
+    }
+
     if (typeof data !== 'object' || data === null) {
       gmcpState.updateModule(module, data);
       return;

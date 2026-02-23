@@ -51,6 +51,7 @@ export interface DisplayPreferences {
   timestamps: boolean;
   maxOutputLines: number;
   confirmDisplayUrl: boolean;
+  debugGmcp: boolean;
 }
 
 export type NavigationKeyScheme = 'jkli' | 'wasd' | 'dvorak-rh' | 'dvorak-lh';

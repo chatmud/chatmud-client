@@ -7,8 +7,9 @@
   import ProxySettings from './ProxySettings.svelte';
   import AccessibilitySettings from './AccessibilitySettings.svelte';
   import AboutInfo from './AboutInfo.svelte';
+  import DebugSettings from './DebugSettings.svelte';
 
-  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'about';
+  type SectionId = 'font' | 'colors' | 'tts' | 'proxy' | 'accessibility' | 'debug' | 'about';
 
   const sections: { id: SectionId; label: string }[] = [
     { id: 'font', label: 'Font' },
@@ -16,6 +17,7 @@
     { id: 'tts', label: 'TTS' },
     { id: 'proxy', label: 'Proxy' },
     { id: 'accessibility', label: 'Accessibility' },
+    { id: 'debug', label: 'Debug' },
     { id: 'about', label: 'About' },
   ];
 
@@ -107,6 +109,8 @@
           <ProxySettings />
         {:else if section.id === 'accessibility'}
           <AccessibilitySettings />
+        {:else if section.id === 'debug'}
+          <DebugSettings />
         {:else if section.id === 'about'}
           <AboutInfo />
         {/if}
