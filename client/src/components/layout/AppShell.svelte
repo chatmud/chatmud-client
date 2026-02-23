@@ -47,6 +47,8 @@
   }
 
   function handleClear() {
+    const count = outputState.lines.length;
+    if (!window.confirm(`Are you sure you wish to clear ${count} line${count !== 1 ? 's' : ''} of output? This decision cannot be reversed.`)) return;
     outputState.clear();
     outputState.announce('Output cleared');
   }
