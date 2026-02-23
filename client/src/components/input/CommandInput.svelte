@@ -10,7 +10,7 @@
   let isConnected = $derived(connectionState.isConnected);
 
   $effect(() => {
-    if (inputElement) {
+    if (inputElement && isConnected) {
       inputElement.focus();
     }
   });

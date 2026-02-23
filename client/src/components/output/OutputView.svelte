@@ -88,6 +88,15 @@
     // Let Alt+key combos pass through to global handler
     if (isChannelHistoryKey(e)) return;
 
+    // Redirect printable keystrokes to command input
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const input = document.getElementById('command-input') as HTMLInputElement | null;
+      if (input && !input.disabled) {
+        input.focus();
+        return;
+      }
+    }
+
     const lineCount = outputState.lines.length;
     if (lineCount === 0) return;
 
