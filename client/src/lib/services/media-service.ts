@@ -11,7 +11,7 @@ import { audioEngine } from './audio-engine-instance';
 import { generateId } from '../utils/generate-id';
 import { preferencesState } from '../state/preferences.svelte';
 class MediaService {
-  private savedVolume: number | null = null;
+  private backgroundMuted = false;
 
   constructor() {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -19,11 +19,11 @@ class MediaService {
 
   private onVisibilityChange = (): void => {
     if (document.hidden && preferencesState.sound.muteInBackground) {
-      this.savedVolume = audioEngine.volume;
+      this.backgroundMuted = true;
       audioEngine.volume = 0;
-    } else if (!document.hidden && this.savedVolume !== null) {
-      audioEngine.volume = this.savedVolume;
-      this.savedVolume = null;
+    } else if (!document.hidden && this.backgroundMuted) {
+      this.backgroundMuted = false;
+      audioEngine.volume = 1;
     }
   };
 
