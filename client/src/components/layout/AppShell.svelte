@@ -58,6 +58,12 @@
 
   function toggleVolume() {
     volumeOpen = !volumeOpen;
+    if (volumeOpen) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById('vol-masterVolume');
+        el?.focus();
+      });
+    }
   }
 
   function handleVolumeClickOutside(e: MouseEvent) {
