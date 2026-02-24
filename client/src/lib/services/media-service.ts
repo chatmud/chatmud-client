@@ -51,6 +51,12 @@ class MediaService {
     }
   }
 
+  destroy(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('blur', this.onBlur);
+    window.removeEventListener('focus', this.onFocus);
+  }
+
   /** Set the default base URL for media files. */
   handleDefault(options: MediaDefaultOptions): void {
     mediaState.defaultUrl = options.url;
