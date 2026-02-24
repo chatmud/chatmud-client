@@ -5,6 +5,8 @@ import { uiState } from '../state/ui.svelte';
 import { mediaState } from '../state/media.svelte';
 import { mediaService } from '../services/media-service';
 import { inputState } from '../state/input.svelte';
+import { preferencesState } from '../state/preferences.svelte';
+import { ttsEngine } from '../services/tts-engine';
 
 export interface SlashCommand {
   name: string;
@@ -14,6 +16,15 @@ export interface SlashCommand {
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
+  {
+    name: 'aria',
+    description: 'Toggle ARIA live region announcements',
+    action: () => {
+      const next = !preferencesState.accessibility.ariaLiveRegions;
+      preferencesState.updateAccessibility({ ariaLiveRegions: next });
+      outputState.announce(next ? 'ARIA live regions on' : 'ARIA live regions off');
+    },
+  },
   {
     name: 'autosay',
     description: 'Toggle autosay — prefixes every message with "say "',
@@ -41,7 +52,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: 'disconnect',
-    description: 'Disconnect from the server',
+    description: 'Disconnect from the MUD server',
     action: () => {
       wsService.disconnect();
     },
@@ -62,10 +73,40 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     },
   },
   {
+    name: 'prefs',
+    description: 'Open preferences',
+    action: () => {
+      uiState.togglePreferences();
+    },
+  },
+  {
     name: 'preferences',
     description: 'Open preferences',
     action: () => {
       uiState.togglePreferences();
+    },
+  },
+  {
+    name: 'tts',
+    description: 'Toggle text-to-speech',
+    action: () => {
+      const next = !preferencesState.tts.enabled;
+      preferencesState.updateTts({ enabled: next });
+      outputState.announce(next ? 'Text to speech on' : 'Text to speech off');
+    },
+  },
+  {
+    name: 'tts-stop',
+    description: 'Stop current text-to-speech playback',
+    action: () => {
+      ttsEngine.cancel();
+    },
+  },
+  {
+    name: 'voice',
+    description: 'Join voice chat (coming soon)',
+    action: () => {
+      outputState.announce('Voice chat is not yet available');
     },
   },
 ];
