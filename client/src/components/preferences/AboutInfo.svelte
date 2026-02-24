@@ -1,8 +1,10 @@
 <script lang="ts">
   import { CLIENT_VERSION, GIT_COMMIT } from '../../lib/constants';
 
-  let proxyVersion = $state('...');
-  let proxyCommit = $state('...');
+  let proxyLoading = $state(true);
+  let proxyVersion = $state('');
+  let proxyCommit = $state('');
+  let proxyError = $state(false);
 
   async function fetchProxyInfo(): Promise<void> {
     try {
@@ -12,12 +14,12 @@
         proxyVersion = data.version ?? 'unknown';
         proxyCommit = data.commit ?? 'unknown';
       } else {
-        proxyVersion = 'unavailable';
-        proxyCommit = 'unavailable';
+        proxyError = true;
       }
     } catch {
-      proxyVersion = 'unavailable';
-      proxyCommit = 'unavailable';
+      proxyError = true;
+    } finally {
+      proxyLoading = false;
     }
   }
 
@@ -27,22 +29,40 @@
 <fieldset class="settings-section">
   <legend class="settings-legend">About</legend>
 
-  <div class="info-row">
-    <span class="info-label">Client version</span>
-    <span class="info-value">{CLIENT_VERSION}</span>
-  </div>
-  <div class="info-row">
-    <span class="info-label">Proxy version</span>
-    <span class="info-value">{proxyVersion}</span>
-  </div>
-  <div class="info-row">
-    <span class="info-label">Commit</span>
-    <span class="info-value mono">{GIT_COMMIT}</span>
-  </div>
-  <div class="info-row">
-    <span class="info-label">Proxy commit</span>
-    <span class="info-value mono">{proxyCommit}</span>
-  </div>
+  <dl class="info-list">
+    <div class="info-row">
+      <dt class="info-label">Client version</dt>
+      <dd class="info-value">{CLIENT_VERSION}</dd>
+    </div>
+    <div class="info-row">
+      <dt class="info-label">Client commit</dt>
+      <dd class="info-value mono">{GIT_COMMIT}</dd>
+    </div>
+    <div class="info-row">
+      <dt class="info-label">Proxy version</dt>
+      <dd class="info-value">
+        {#if proxyLoading}
+          <span class="loading-text">Loading&hellip;</span>
+        {:else if proxyError}
+          unavailable
+        {:else}
+          {proxyVersion}
+        {/if}
+      </dd>
+    </div>
+    <div class="info-row">
+      <dt class="info-label">Proxy commit</dt>
+      <dd class="info-value mono">
+        {#if proxyLoading}
+          <span class="loading-text">Loading&hellip;</span>
+        {:else if proxyError}
+          unavailable
+        {:else}
+          {proxyCommit}
+        {/if}
+      </dd>
+    </div>
+  </dl>
 </fieldset>
 
 <style>
@@ -60,6 +80,11 @@
     padding: 0 4px;
   }
 
+  .info-list {
+    margin: 0;
+    padding: 0;
+  }
+
   .info-row {
     display: flex;
     align-items: center;
@@ -71,15 +96,21 @@
   .info-label {
     color: var(--text-secondary);
     font-size: 13px;
+    margin: 0;
   }
 
   .info-value {
     color: var(--text-primary);
     font-size: 13px;
+    margin: 0;
   }
 
   .info-value.mono {
     font-family: monospace;
     font-size: 12px;
+  }
+
+  .loading-text {
+    color: var(--text-secondary);
   }
 </style>
