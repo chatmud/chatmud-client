@@ -93,6 +93,7 @@ describe("parseSessionConfig", () => {
     persistenceTimeout: 600000,
     maxBufferLines: 1000,
     useProxyProtocol: false,
+    rejectUnauthorizedUpstream: false,
   };
 
   it("returns defaults when no URL params provided", () => {

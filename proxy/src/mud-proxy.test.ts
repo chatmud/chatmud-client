@@ -199,6 +199,7 @@ describe("MudProxy integration", () => {
       persistenceTimeout: 5000,
       maxBufferLines: 100,
       useProxyProtocol: false,
+      rejectUnauthorizedUpstream: false,
     };
 
     proxy = new MudProxy(httpServer, config);
@@ -476,6 +477,7 @@ describe("MudProxy integration", () => {
         persistenceTimeout: 0,
         maxBufferLines: 100,
         useProxyProtocol: false,
+        rejectUnauthorizedUpstream: false,
       };
       proxy = new MudProxy(httpServer, config);
       await new Promise<void>((resolve) => {
@@ -515,6 +517,7 @@ describe("MudProxy integration", () => {
         persistenceTimeout: 5000,
         maxBufferLines: 10, // minimum allowed
         useProxyProtocol: false,
+        rejectUnauthorizedUpstream: false,
       };
       proxy = new MudProxy(httpServer, config);
       await new Promise<void>((resolve) => {
