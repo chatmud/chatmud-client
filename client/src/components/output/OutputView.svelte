@@ -159,9 +159,8 @@
   <div
     id="output-region"
     class="output-view"
-    role="log"
+    role="region"
     aria-label="Output"
-    aria-live="off"
     tabindex={0}
     bind:this={container}
     onscroll={handleScroll}
