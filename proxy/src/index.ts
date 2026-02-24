@@ -9,7 +9,16 @@ import type { ProxyConfig } from "./types.js";
 // Read proxy version from package.json
 const proxyPkg = JSON.parse(readFileSync(path.join(__dirname, "..", "package.json"), "utf-8"));
 const PROXY_VERSION = proxyPkg.version as string;
-const COMMIT_SHA = process.env.COMMIT_SHA || "dev";
+
+function readCommitSha(): string {
+  const commitFile = path.join(__dirname, "COMMIT");
+  try {
+    return readFileSync(commitFile, "utf-8").trim();
+  } catch {
+    return "dev";
+  }
+}
+const COMMIT_SHA = readCommitSha();
 
 // Configuration from environment variables with defaults and validation
 const rawConfig = {
