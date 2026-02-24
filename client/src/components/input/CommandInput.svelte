@@ -154,7 +154,7 @@
         if (trimmed.startsWith('/')) {
           const match = findCommand(trimmed);
           if (match) {
-            match.action();
+            match.command.action(match.args);
             inputValue = '';
             inputState.currentInput = '';
             inputState.historyIndex = -1;

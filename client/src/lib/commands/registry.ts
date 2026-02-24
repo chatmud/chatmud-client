@@ -12,10 +12,30 @@ export interface SlashCommand {
   name: string;
   description: string;
   args?: string;
-  action: () => void;
+  action: (args?: string) => void;
+}
+
+function parseVolume(args: string | undefined): number | null {
+  const n = parseInt(args ?? '', 10);
+  return Number.isFinite(n) && n >= 1 && n <= 100 ? n : null;
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
+  {
+    name: 'amb',
+    description: 'Set ambience volume',
+    args: '<1-100>',
+    action: (args) => {
+      const vol = parseVolume(args);
+      if (vol === null) {
+        outputState.addSystemLine('Usage: /amb <1-100>');
+        return;
+      }
+      preferencesState.updateSound({ ambianceVolume: vol });
+      mediaService.updateVolumes();
+      outputState.announce(`Ambience volume set to ${vol}`);
+    },
+  },
   {
     name: 'aria',
     description: 'Toggle ARIA live region announcements',
@@ -58,6 +78,13 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     },
   },
   {
+    name: 'help',
+    description: 'Show keyboard shortcuts',
+    action: () => {
+      uiState.openPreferencesTo('shortcuts');
+    },
+  },
+  {
     name: 'install',
     description: 'Add this app to your home screen or desktop',
     action: () => {
@@ -71,13 +98,6 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     },
   },
   {
-    name: 'help',
-    description: 'Show keyboard shortcuts',
-    action: () => {
-      uiState.openPreferencesTo('shortcuts');
-    },
-  },
-  {
     name: 'mute',
     description: 'Toggle audio mute',
     action: () => {
@@ -87,13 +107,6 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: 'prefs',
-    description: 'Open preferences',
-    action: () => {
-      uiState.togglePreferences();
-    },
-  },
-  {
-    name: 'preferences',
     description: 'Open preferences',
     action: () => {
       uiState.togglePreferences();
@@ -115,6 +128,21 @@ export const SLASH_COMMANDS: SlashCommand[] = [
       outputState.addSystemLine('Voice chat is not yet available');
     },
   },
+  {
+    name: 'vol',
+    description: 'Set master volume',
+    args: '<1-100>',
+    action: (args) => {
+      const vol = parseVolume(args);
+      if (vol === null) {
+        outputState.addSystemLine('Usage: /vol <1-100>');
+        return;
+      }
+      preferencesState.updateSound({ masterVolume: vol });
+      mediaService.updateVolumes();
+      outputState.announce(`Volume set to ${vol}`);
+    },
+  },
 ];
 
 export function filterCommands(query: string): SlashCommand[] {
@@ -122,7 +150,14 @@ export function filterCommands(query: string): SlashCommand[] {
   return SLASH_COMMANDS.filter((cmd) => cmd.name.startsWith(q));
 }
 
-export function findCommand(input: string): SlashCommand | undefined {
-  const normalized = input.trim().toLowerCase();
-  return SLASH_COMMANDS.find((cmd) => '/' + cmd.name === normalized);
+export function findCommand(input: string): { command: SlashCommand; args: string } | undefined {
+  const trimmed = input.trim();
+  const lower = trimmed.toLowerCase();
+  for (const cmd of SLASH_COMMANDS) {
+    const prefix = '/' + cmd.name;
+    if (lower === prefix || lower.startsWith(prefix + ' ')) {
+      return { command: cmd, args: trimmed.slice(prefix.length).trim() };
+    }
+  }
+  return undefined;
 }
