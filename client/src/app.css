@@ -28,19 +28,19 @@
 
   /* ANSI colors - vibrant on dark background */
   --ansi-black: #484f58;
-  --ansi-red: #ff7b72;
+  --ansi-red: #cc3333;
   --ansi-green: #3fb950;
-  --ansi-yellow: #d29922;
+  --ansi-yellow: #cccc00;
   --ansi-blue: #58a6ff;
-  --ansi-magenta: #bc8cff;
+  --ansi-magenta: #cc44cc;
   --ansi-cyan: #39d2e0;
   --ansi-white: #e6edf3;
   --ansi-bright-black: #6e7681;
-  --ansi-bright-red: #ffa198;
+  --ansi-bright-red: #ff5555;
   --ansi-bright-green: #56d364;
-  --ansi-bright-yellow: #e3b341;
+  --ansi-bright-yellow: #ffff55;
   --ansi-bright-blue: #79c0ff;
-  --ansi-bright-magenta: #d2a8ff;
+  --ansi-bright-magenta: #ff55ff;
   --ansi-bright-cyan: #56d4dd;
   --ansi-bright-white: #ffffff;
 }
