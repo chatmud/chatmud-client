@@ -10,12 +10,16 @@
  */
 
 import { mcpService } from '../mcp-service';
+import { wsService } from '../websocket';
 import { statusState } from '../../state/status.svelte';
 import { connectionState } from '../../state/connection.svelte';
+import { mcpState } from '../../state/mcp.svelte';
 
 const PING_INTERVAL = 30_000;
+const PING_TIMEOUT = 15_000;
 
 let pingTimer: ReturnType<typeof setInterval> | null = null;
+let pingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function registerPingPackage(): void {
   mcpService.registerHandler('dns-com-awns-ping', () => {
@@ -24,6 +28,11 @@ export function registerPingPackage(): void {
   });
 
   mcpService.registerHandler('dns-com-awns-ping-reply', () => {
+    // Pong received — cancel zombie detection timeout
+    if (pingTimeoutTimer !== null) {
+      clearTimeout(pingTimeoutTimer);
+      pingTimeoutTimer = null;
+    }
     // Response to a ping we initiated - calculate latency
     if (statusState.lastPingSent != null) {
       const raw = performance.now() - statusState.lastPingSent;
@@ -39,6 +48,15 @@ export function registerPingPackage(): void {
  */
 export function sendPing(): void {
   if (!connectionState.isConnected) return;
+  if (!mcpState.authKey) return; // MCP handshake not yet complete; ping would be dropped
+  // Start zombie-detection timeout: if no pong within PING_TIMEOUT, force reconnect
+  if (pingTimeoutTimer !== null) {
+    clearTimeout(pingTimeoutTimer);
+  }
+  pingTimeoutTimer = setTimeout(() => {
+    pingTimeoutTimer = null;
+    wsService.forceReconnect();
+  }, PING_TIMEOUT);
   statusState.lastPingSent = performance.now();
   mcpService.sendMessage('dns-com-awns-ping', new Map());
 }
@@ -59,5 +77,9 @@ export function stopPingTimer(): void {
   if (pingTimer !== null) {
     clearInterval(pingTimer);
     pingTimer = null;
+  }
+  if (pingTimeoutTimer !== null) {
+    clearTimeout(pingTimeoutTimer);
+    pingTimeoutTimer = null;
   }
 }

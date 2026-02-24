@@ -65,12 +65,14 @@ class WebSocketService {
     }, 15000);
 
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       clearTimeout(connectionTimeout);
       this.reconnectAttempt = 0;
       this.onStatus?.('connected');
     };
 
     ws.onmessage = (event: MessageEvent) => {
+      if (this.ws !== ws) return;
       if (event.data instanceof ArrayBuffer) {
         const bytes = new Uint8Array(event.data);
         if (bytes.length > 0 && bytes[0] === PROXY_MARKER) {
@@ -94,6 +96,7 @@ class WebSocketService {
     };
 
     ws.onclose = () => {
+      if (this.ws !== ws) return;
       this.ws = null;
       this.onStatus?.('disconnected');
       if (!this.intentionalClose) {
@@ -154,6 +157,15 @@ class WebSocketService {
       this.ws.close(1000);
       this.ws = null;
     }
+  }
+
+  /**
+   * Force an immediate reconnect, resetting backoff. Used when a zombie
+   * connection is detected (e.g. ping timeout).
+   */
+  forceReconnect(): void {
+    this.reconnectAttempt = 0;
+    this.connect(this.sessionId ?? undefined);
   }
 
   /**

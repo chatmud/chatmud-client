@@ -14,7 +14,7 @@ import { mcpService } from './mcp-service';
 import { connectionState } from '../state/connection.svelte';
 import { outputState } from '../state/output.svelte';
 import { registerNegotiatePackage } from './mcp-packages/negotiate';
-import { registerPingPackage, startPingTimer, stopPingTimer } from './mcp-packages/ping';
+import { registerPingPackage, startPingTimer, stopPingTimer, sendPing } from './mcp-packages/ping';
 import { registerStatusPackage } from './mcp-packages/status';
 import { registerServerInfoPackage } from './mcp-packages/serverinfo';
 import { registerDisplayUrlPackage } from './mcp-packages/displayurl';
@@ -171,6 +171,20 @@ export function initServices(): void {
     resumingSession = true;
     wsService.connect(connectionState.sessionId);
   }
+
+  const handleNetworkResume = () => {
+    if (!wsService.connected) {
+      resumingSession = !!connectionState.sessionId;
+      wsService.connect(connectionState.sessionId ?? undefined);
+    } else {
+      sendPing(); // ping timeout handles zombie detection
+    }
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) handleNetworkResume();
+  });
+  window.addEventListener('online', handleNetworkResume);
 
   window.addEventListener('pagehide', () => {
     ttsEngine.destroy();
