@@ -2,12 +2,24 @@
   import { inputState } from '../../lib/state/input.svelte';
   import { wsService } from '../../lib/services/websocket';
   import { connectionState } from '../../lib/state/connection.svelte';
+  import { slashCommandState } from '../../lib/state/slash-commands.svelte';
+  import { findCommand } from '../../lib/commands/registry';
+  import type { SlashCommand } from '../../lib/commands/registry';
+  import SlashCommandMenu from './SlashCommandMenu.svelte';
 
   let inputValue = $state('');
   let inputElement: HTMLTextAreaElement | HTMLInputElement | undefined = $state(undefined);
 
   let isPasswordMode = $derived(!inputState.echoMode);
   let isConnected = $derived(connectionState.isConnected);
+
+  let menuVisible = $derived(
+    slashCommandState.isOpen && slashCommandState.suggestions.length > 0
+  );
+
+  let activeDescendantId = $derived(
+    menuVisible ? 'slash-opt-' + slashCommandState.selectedCommand?.name : undefined
+  );
 
   function autoResize() {
     if (!inputElement || !(inputElement instanceof HTMLTextAreaElement)) return;
@@ -60,11 +72,71 @@
     return false;
   }
 
+  function moveCursorToEnd() {
+    if (inputElement) {
+      inputElement.selectionStart = inputElement.value.length;
+      inputElement.selectionEnd = inputElement.value.length;
+    }
+  }
+
+  function acceptSuggestion(cmd: SlashCommand) {
+    if (!cmd.args) {
+      cmd.action();
+      inputValue = '';
+      inputState.currentInput = '';
+      inputState.historyIndex = -1;
+      slashCommandState.close();
+      requestAnimationFrame(() => {
+        autoResize();
+        inputElement?.focus();
+      });
+    } else {
+      inputValue = '/' + cmd.name + ' ';
+      inputState.currentInput = inputValue;
+      slashCommandState.close();
+      requestAnimationFrame(() => {
+        autoResize();
+        moveCursorToEnd();
+      });
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     // Suppress Alt+key combinations so browser doesn't intercept them
     if (isChannelHistoryKey(event)) {
       event.preventDefault();
       return;
+    }
+
+    // Slash command menu navigation
+    if (menuVisible) {
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        slashCommandState.selectPrev();
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        slashCommandState.selectNext();
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        slashCommandState.close();
+        return;
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        const cmd = slashCommandState.selectedCommand;
+        if (cmd) acceptSuggestion(cmd);
+        return;
+      }
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        const cmd = slashCommandState.selectedCommand;
+        if (cmd) acceptSuggestion(cmd);
+        return;
+      }
     }
 
     switch (event.key) {
@@ -75,10 +147,26 @@
         }
         event.preventDefault();
         const command = inputValue;
+
+        // Client-side slash command interception
+        const trimmed = command.trim();
+        if (trimmed.startsWith('/')) {
+          const match = findCommand(trimmed);
+          if (match) {
+            match.action();
+            inputValue = '';
+            inputState.currentInput = '';
+            inputState.historyIndex = -1;
+            slashCommandState.close();
+            requestAnimationFrame(autoResize);
+            return;
+          }
+        }
+
         if (command !== '') {
           inputState.addToHistory(command);
         }
-        // Split multiline input and send each line as a separate command
+        // Split multiline input and send each line as a separate command.
         const lines = command.split('\n');
         for (const line of lines) {
           wsService.sendCommand(line);
@@ -86,6 +174,7 @@
         inputValue = '';
         inputState.currentInput = '';
         inputState.historyIndex = -1;
+        slashCommandState.close();
         requestAnimationFrame(autoResize);
         break;
       }
@@ -98,10 +187,7 @@
         inputState.currentInput = result;
         requestAnimationFrame(() => {
           autoResize();
-          if (inputElement) {
-            inputElement.selectionStart = inputElement.value.length;
-            inputElement.selectionEnd = inputElement.value.length;
-          }
+          moveCursorToEnd();
         });
         break;
       }
@@ -124,44 +210,67 @@
     inputState.currentInput = target.value;
     inputState.historyIndex = -1;
     autoResize();
+
+    const val = inputValue;
+    if (!isPasswordMode && val.startsWith('/') && !val.includes('\n')) {
+      slashCommandState.open(val.slice(1).toLowerCase());
+    } else {
+      slashCommandState.close();
+    }
+  }
+
+  function handleBlur() {
+    setTimeout(() => slashCommandState.close(), 150);
   }
 </script>
 
 <div class="command-input-bar">
   <span class="input-prompt" aria-hidden="true">&gt;</span>
-  {#if isPasswordMode}
-    <input
-      id="command-input"
-      class="command-input"
-      type="password"
-      value={inputValue}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      bind:this={inputElement}
-      placeholder={isConnected ? 'Enter command...' : 'Not connected'}
-      aria-label="Command input"
-      autocomplete="off"
-      autocapitalize="off"
-      spellcheck={false}
-      disabled={!isConnected}
-    />
-  {:else}
-    <textarea
-      id="command-input"
-      class="command-input"
-      value={inputValue}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      bind:this={inputElement}
-      placeholder={isConnected ? 'Enter command...' : 'Not connected'}
-      aria-label="Command input"
-      autocomplete="off"
-      autocapitalize="off"
-      spellcheck={false}
-      disabled={!isConnected}
-      rows={1}
-    ></textarea>
-  {/if}
+  <div class="input-wrapper">
+    {#if menuVisible}
+      <SlashCommandMenu onselect={acceptSuggestion} />
+    {/if}
+    {#if isPasswordMode}
+      <input
+        id="command-input"
+        class="command-input"
+        type="password"
+        value={inputValue}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onblur={handleBlur}
+        bind:this={inputElement}
+        placeholder={isConnected ? 'Enter command...' : 'Not connected'}
+        aria-label="Command input"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck={false}
+        disabled={!isConnected}
+      />
+    {:else}
+      <textarea
+        id="command-input"
+        class="command-input"
+        value={inputValue}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onblur={handleBlur}
+        bind:this={inputElement}
+        placeholder={isConnected ? 'Enter command...' : 'Not connected'}
+        role="combobox"
+        aria-label="Command input"
+        aria-autocomplete="list"
+        aria-expanded={menuVisible}
+        aria-controls="slash-command-menu"
+        aria-activedescendant={activeDescendantId}
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck={false}
+        disabled={!isConnected}
+        rows={1}
+      ></textarea>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -181,6 +290,13 @@
     flex-shrink: 0;
     line-height: var(--line-height);
     padding-top: 7px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .command-input {
