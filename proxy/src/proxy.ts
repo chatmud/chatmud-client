@@ -43,9 +43,11 @@ const enum NewEnviron {
  */
 export function generateSessionId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
   let result = "";
   for (let i = 0; i < 24; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars[bytes[i] % chars.length];
   }
   return result;
 }
