@@ -81,13 +81,13 @@
   --ansi-cyan: #0a6c74;
   --ansi-white: #6e7781;
   --ansi-bright-black: #57606a;
-  --ansi-bright-red: #a40e26;
+  --ansi-bright-red: #d1242f;
   --ansi-bright-green: #1a7f37;
-  --ansi-bright-yellow: #633c01;
+  --ansi-bright-yellow: #7a5300;
   --ansi-bright-blue: #0969da;
   --ansi-bright-magenta: #8250df;
-  --ansi-bright-cyan: #1b7c83;
-  --ansi-bright-white: #8c959f;
+  --ansi-bright-cyan: #0e7a87;
+  --ansi-bright-white: #6e7781;
 }
 
 [data-theme='high-contrast'] {
