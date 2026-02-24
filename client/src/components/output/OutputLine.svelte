@@ -103,9 +103,10 @@
   }
 
   .focused-line {
-    background-color: rgba(66, 135, 245, 0.15);
-    outline: 1px solid rgba(66, 135, 245, 0.3);
+    background-color: var(--accent-muted);
+    outline: 1px solid var(--accent);
     outline-offset: -1px;
+    opacity: 0.9;
   }
 
   .rendered-html {
