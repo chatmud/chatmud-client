@@ -12,6 +12,7 @@
 
   let isPasswordMode = $derived(!inputState.echoMode);
   let isConnected = $derived(connectionState.isConnected);
+  let autosay = $derived(inputState.autosayMode);
 
   let menuVisible = $derived(
     slashCommandState.isOpen && slashCommandState.suggestions.length > 0
@@ -167,9 +168,14 @@
           inputState.addToHistory(command);
         }
         // Split multiline input and send each line as a separate command.
+        // Autosay mode prepends "say " to non-empty lines that aren't slash-prefixed.
         const lines = command.split('\n');
         for (const line of lines) {
-          wsService.sendCommand(line);
+          const out =
+            inputState.autosayMode && line.length > 0 && !line.trimStart().startsWith('/')
+              ? 'say ' + line
+              : line;
+          wsService.sendCommand(out);
         }
         inputValue = '';
         inputState.currentInput = '';
@@ -225,7 +231,7 @@
 </script>
 
 <div class="command-input-bar">
-  <span class="input-prompt" aria-hidden="true">&gt;</span>
+  <span class="input-prompt" class:autosay aria-hidden="true">{#if autosay}say&gt;{:else}&gt;{/if}</span>
   <div class="input-wrapper">
     {#if menuVisible}
       <SlashCommandMenu onselect={acceptSuggestion} />
@@ -251,6 +257,7 @@
       <textarea
         id="command-input"
         class="command-input"
+        class:autosay
         value={inputValue}
         oninput={handleInput}
         onkeydown={handleKeydown}
@@ -332,5 +339,20 @@
 
   .command-input:disabled::placeholder {
     color: var(--text-secondary);
+  }
+
+  /* Autosay mode — amber accent throughout the input bar */
+  .input-prompt.autosay {
+    color: var(--warning);
+    transition: color var(--transition-speed);
+  }
+
+  .command-input.autosay {
+    border-color: color-mix(in srgb, var(--warning) 40%, var(--border-subtle));
+  }
+
+  .command-input.autosay:focus {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 20%, transparent);
   }
 </style>

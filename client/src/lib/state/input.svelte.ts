@@ -24,6 +24,7 @@ class InputState {
   history = $state<string[]>(loadHistory());
   historyIndex = $state(-1);
   echoMode = $state(true); // false = password mode
+  autosayMode = $state(false);
 
   private savedInput = '';
 

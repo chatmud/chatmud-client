@@ -4,6 +4,7 @@ import { connectionState } from '../state/connection.svelte';
 import { uiState } from '../state/ui.svelte';
 import { mediaState } from '../state/media.svelte';
 import { mediaService } from '../services/media-service';
+import { inputState } from '../state/input.svelte';
 
 export interface SlashCommand {
   name: string;
@@ -13,6 +14,14 @@ export interface SlashCommand {
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
+  {
+    name: 'autosay',
+    description: 'Toggle autosay — prefixes every message with "say "',
+    action: () => {
+      inputState.autosayMode = !inputState.autosayMode;
+      outputState.announce(inputState.autosayMode ? 'Autosay on' : 'Autosay off');
+    },
+  },
   {
     name: 'clear',
     description: 'Clear the output buffer',
