@@ -490,6 +490,7 @@ export function parseUpstreamUrl(url: string): { host: string; port: number; use
  * WebSocket proxy with connection persistence
  */
 export class MudProxy {
+  private readonly MAX_CONNECTIONS = 1000;
   private wss: WebSocketServer;
   private sessions: Map<string, Session> = new Map();
   private config: ProxyConfig;
@@ -540,6 +541,12 @@ export class MudProxy {
    * Handle new WebSocket connection from client
    */
   private handleConnection(clientWs: WebSocket, req: IncomingMessage): void {
+    if (this.sessions.size >= this.MAX_CONNECTIONS) {
+      console.warn(`[Proxy] Connection limit (${this.MAX_CONNECTIONS}) reached, rejecting client`);
+      clientWs.close(1008, "Connection limit exceeded");
+      return;
+    }
+
     const url = new URL(req.url || "", `http://${req.headers.host}`);
     const sessionId = url.searchParams.get("sessionId");
     const clientInfo = getClientInfo(req);
