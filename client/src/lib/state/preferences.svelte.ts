@@ -50,10 +50,17 @@ function getDefaults(): PreferencesSchema {
   };
 }
 
+function getSystemTheme(): 'dark' | 'light' {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 function loadFromStorage(): PreferencesSchema {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
-    if (!raw) return getDefaults();
+    if (!raw) {
+      const defaults = getDefaults();
+      return { ...defaults, colors: { ...defaults.colors, theme: getSystemTheme() } };
+    }
     const parsed = JSON.parse(raw);
     const defaults = getDefaults();
     return {
