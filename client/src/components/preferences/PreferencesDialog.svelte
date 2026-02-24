@@ -23,6 +23,14 @@
 
   let activeSection = $state<SectionId>('font');
   let focusedIndex = $state(0);
+  let isMobile = $state(window.matchMedia('(max-width: 600px)').matches);
+
+  $effect(() => {
+    const mq = window.matchMedia('(max-width: 600px)');
+    const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  });
 
   $effect(() => {
     if (uiState.preferencesSection && uiState.preferencesOpen) {
@@ -83,7 +91,7 @@
 <Modal open={uiState.preferencesOpen} onclose={handleClose} title="Preferences">
   <div class="preferences-layout">
     <!-- svelte-ignore a11y_interactive_supports_focus -->
-    <div class="preferences-nav" role="tablist" aria-label="Preferences sections" aria-orientation="vertical" onkeydown={handleTabKeydown}>
+    <div class="preferences-nav" role="tablist" aria-label="Preferences sections" aria-orientation={isMobile ? 'horizontal' : 'vertical'} onkeydown={handleTabKeydown}>
       {#each sections as section, i (section.id)}
         <button
           id="prefs-tab-{section.id}"
@@ -143,6 +151,7 @@
     min-width: 120px;
     border-right: 1px solid var(--border-color);
     padding-right: 16px;
+    flex-shrink: 0;
   }
 
   .nav-item {
@@ -159,6 +168,7 @@
     cursor: pointer;
     transition: background-color var(--transition-speed),
       color var(--transition-speed);
+    white-space: nowrap;
   }
 
   .nav-item:hover {
@@ -186,5 +196,35 @@
     outline: var(--focus-ring-width) solid var(--focus-ring);
     outline-offset: -1px;
     border-radius: 4px;
+  }
+
+  @media (max-width: 600px) {
+    .preferences-layout {
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .preferences-nav {
+      flex-direction: row;
+      min-width: 0;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+      padding-right: 0;
+      padding-bottom: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      gap: 4px;
+    }
+
+    .preferences-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-item {
+      width: auto;
+      flex-shrink: 0;
+      padding: 5px 12px;
+    }
   }
 </style>
