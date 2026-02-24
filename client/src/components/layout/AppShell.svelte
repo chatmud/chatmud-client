@@ -139,6 +139,16 @@
 <!-- Toolbar -->
 <header class="toolbar">
   <div class="toolbar-left">
+    {#if connectionState.isConnected}
+      <button class="toolbar-btn" onclick={() => uiState.toggleSidebar()} aria-label="Toggle sidebar" title="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3h14v1.5H1V3zm0 4h14v1.5H1V7zm0 4h10v1.5H1V11z"/></svg>
+      </button>
+    {:else}
+      <div class="toolbar-btn-placeholder"></div>
+    {/if}
+  </div>
+
+  <div class="toolbar-center">
     <svg class="toolbar-logo" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 2C6.48 2 2 6.48 2 12" stroke="var(--brand-light)" stroke-width="2.5" stroke-linecap="round"/>
       <path d="M22 12c0 5.52-4.48 10-10 10" stroke="var(--brand-light)" stroke-width="2.5" stroke-linecap="round"/>
@@ -149,14 +159,6 @@
     <span class="toolbar-title">
       <span class="title-chat">CHAT</span><span class="title-mud">MUD</span>
     </span>
-  </div>
-
-  <div class="toolbar-center">
-    {#if connectionState.isConnected}
-      <button class="toolbar-btn" onclick={() => uiState.toggleSidebar()} aria-label="Toggle sidebar" title="Toggle sidebar">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3h14v1.5H1V3zm0 4h14v1.5H1V7zm0 4h10v1.5H1V11z"/></svg>
-      </button>
-    {/if}
   </div>
 
   <div class="toolbar-right">
@@ -243,6 +245,19 @@
   .toolbar-left {
     display: flex;
     align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .toolbar-btn-placeholder {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+
+  .toolbar-center {
+    display: flex;
+    align-items: center;
     gap: 8px;
     flex-shrink: 0;
   }
@@ -267,17 +282,12 @@
     color: var(--brand-light);
   }
 
-  .toolbar-center {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
   .toolbar-right {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    flex: 1;
+    justify-content: flex-end;
   }
 
   .toolbar-btn {
@@ -417,5 +427,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
   }
 </style>
