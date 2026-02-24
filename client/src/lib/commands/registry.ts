@@ -6,7 +6,6 @@ import { mediaState } from '../state/media.svelte';
 import { mediaService } from '../services/media-service';
 import { inputState } from '../state/input.svelte';
 import { preferencesState } from '../state/preferences.svelte';
-import { ttsEngine } from '../services/tts-engine';
 import { pwaState } from '../state/pwa.svelte';
 
 export interface SlashCommand {
@@ -60,7 +59,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: 'install',
-    description: 'Install as a PWA',
+    description: 'Add this app to your home screen or desktop',
     action: () => {
       if (pwaState.isInstalled) {
         outputState.addSystemLine('Already running as an installed app');
@@ -107,13 +106,6 @@ export const SLASH_COMMANDS: SlashCommand[] = [
       const next = !preferencesState.tts.enabled;
       preferencesState.updateTts({ enabled: next });
       outputState.announce(next ? 'Text to speech on' : 'Text to speech off');
-    },
-  },
-  {
-    name: 'tts-stop',
-    description: 'Stop current text-to-speech playback',
-    action: () => {
-      ttsEngine.cancel();
     },
   },
   {
