@@ -106,7 +106,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     name: 'voice',
     description: 'Join voice chat (coming soon)',
     action: () => {
-      outputState.announce('Voice chat is not yet available');
+      outputState.addSystemLine('Voice chat is not yet available');
     },
   },
 ];
