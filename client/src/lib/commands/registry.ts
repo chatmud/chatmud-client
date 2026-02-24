@@ -7,6 +7,7 @@ import { mediaService } from '../services/media-service';
 import { inputState } from '../state/input.svelte';
 import { preferencesState } from '../state/preferences.svelte';
 import { ttsEngine } from '../services/tts-engine';
+import { pwaState } from '../state/pwa.svelte';
 
 export interface SlashCommand {
   name: string;
@@ -55,6 +56,19 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Disconnect from the MUD server',
     action: () => {
       wsService.disconnect();
+    },
+  },
+  {
+    name: 'install',
+    description: 'Install as a PWA',
+    action: () => {
+      if (pwaState.isInstalled) {
+        outputState.addSystemLine('Already running as an installed app');
+      } else if (pwaState.canInstall) {
+        pwaState.triggerInstall();
+      } else {
+        outputState.addSystemLine('Installation not available in this browser or context');
+      }
     },
   },
   {
