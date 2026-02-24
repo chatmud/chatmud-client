@@ -22,6 +22,7 @@ import { registerSimpleeditPackage } from './mcp-packages/simpleedit';
 import { registerUserlistPackage } from './mcp-packages/userlist';
 import { registerClientPackage } from './mcp-packages/client';
 import { ttsEngine } from './tts-engine';
+import { mediaService } from './media-service';
 import { ttsState } from '../state/tts.svelte';
 import { channelHistoryState } from '../state/channel-history.svelte';
 
@@ -170,4 +171,9 @@ export function initServices(): void {
     resumingSession = true;
     wsService.connect(connectionState.sessionId);
   }
+
+  window.addEventListener('pagehide', () => {
+    ttsEngine.destroy();
+    mediaService.destroy();
+  }, { once: true });
 }
