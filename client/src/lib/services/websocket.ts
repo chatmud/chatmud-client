@@ -58,7 +58,14 @@ class WebSocketService {
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
 
+    const connectionTimeout = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        ws.close();
+      }
+    }, 15000);
+
     ws.onopen = () => {
+      clearTimeout(connectionTimeout);
       this.reconnectAttempt = 0;
       this.onStatus?.('connected');
     };
