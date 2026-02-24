@@ -165,7 +165,9 @@ class WebSocketService {
    */
   private scheduleReconnect(): void {
     const delayIndex = Math.min(this.reconnectAttempt, RECONNECT_DELAYS.length - 1);
-    const delay = RECONNECT_DELAYS[delayIndex];
+    const base = RECONNECT_DELAYS[delayIndex];
+    const jitter = base * 0.2 * Math.random();
+    const delay = base + jitter;
     this.reconnectAttempt++;
 
     this.reconnectTimer = setTimeout(() => {
