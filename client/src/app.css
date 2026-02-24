@@ -166,7 +166,11 @@
   padding: 0;
 }
 
-html,
+html {
+  height: 100%;
+  height: 100dvh;
+}
+
 body,
 #app {
   height: 100%;
