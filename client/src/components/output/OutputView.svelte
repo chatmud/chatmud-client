@@ -22,13 +22,19 @@
     return container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
   }
 
+  let scrollRafPending = false;
   function handleScroll() {
-    const wasLocked = outputState.scrollLocked;
-    const nowLocked = isAtBottom();
-    outputState.scrollLocked = nowLocked;
-    if (wasLocked && !nowLocked) {
-      lineCountWhenUnlocked = outputState.lines.length;
-    }
+    if (scrollRafPending) return;
+    scrollRafPending = true;
+    requestAnimationFrame(() => {
+      scrollRafPending = false;
+      const wasLocked = outputState.scrollLocked;
+      const nowLocked = isAtBottom();
+      outputState.scrollLocked = nowLocked;
+      if (wasLocked && !nowLocked) {
+        lineCountWhenUnlocked = outputState.lines.length;
+      }
+    });
   }
 
   $effect(() => {
