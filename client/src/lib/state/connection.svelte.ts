@@ -1,8 +1,7 @@
 import type { SessionConfig, ProxyMessage } from '../types/proxy';
+import { STORAGE_KEYS } from '../constants';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
-
-const STORAGE_KEY = 'chatmud-sessionId';
 
 class ConnectionState {
   status = $state<ConnectionStatus>('disconnected');
@@ -18,7 +17,7 @@ class ConnectionState {
         this.sessionId = msg.sessionId ?? null;
         this.sessionConfig = msg.config ?? null;
         if (this.sessionId) {
-          localStorage.setItem(STORAGE_KEY, this.sessionId);
+          localStorage.setItem(STORAGE_KEYS.SESSION_ID, this.sessionId);
         }
         break;
       case 'reconnected':
@@ -30,7 +29,7 @@ class ConnectionState {
         break;
       case 'error':
         this.lastError = msg.error ?? null;
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
         break;
       case 'bufferReplayComplete':
         break;
@@ -38,7 +37,7 @@ class ConnectionState {
   }
 
   loadSessionId(): void {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
     if (saved) {
       this.sessionId = saved;
     }
@@ -50,7 +49,7 @@ class ConnectionState {
     this.sessionConfig = null;
     this.reconnectAttempt = 0;
     this.lastError = null;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
   }
 }
 

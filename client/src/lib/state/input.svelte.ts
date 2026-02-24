@@ -1,4 +1,5 @@
-const HISTORY_KEY = 'chatmud:commandHistory';
+import { STORAGE_KEYS } from '../constants';
+const HISTORY_KEY = STORAGE_KEYS.COMMAND_HISTORY;
 const MAX_HISTORY = 10000;
 
 function loadHistory(): string[] {

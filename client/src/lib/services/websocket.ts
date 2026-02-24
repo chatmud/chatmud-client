@@ -7,7 +7,7 @@
  */
 
 import type { ProxyMessage, ClientMessage } from '../types/proxy';
-import { PROXY_MARKER, RECONNECT_DELAYS } from '../constants';
+import { PROXY_MARKER, RECONNECT_DELAYS, STORAGE_KEYS } from '../constants';
 
 export type WsDataHandler = (data: Uint8Array) => void;
 export type WsProxyHandler = (msg: ProxyMessage) => void;
@@ -145,7 +145,7 @@ class WebSocketService {
   disconnect(): void {
     this.intentionalClose = true;
     this.sessionId = null;
-    localStorage.removeItem('chatmud-sessionId');
+    localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

@@ -9,9 +9,8 @@ import type {
   KeyboardPreferences,
   SoundPreferences,
 } from '../types/preferences';
+import { STORAGE_KEYS } from '../constants';
 // Note: Don't import from services yet - we'll call persistence functions from the component layer
-
-const STORAGE_KEY = 'chatmud-preferences';
 const CURRENT_VERSION = 1;
 
 function getDefaults(): PreferencesSchema {
@@ -53,7 +52,7 @@ function getDefaults(): PreferencesSchema {
 
 function loadFromStorage(): PreferencesSchema {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
     if (!raw) return getDefaults();
     const parsed = JSON.parse(raw);
     const defaults = getDefaults();
@@ -162,7 +161,7 @@ class PreferencesState {
 
   private save(): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this._prefs));
+      localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(this._prefs));
     } catch {
       /* quota exceeded */
     }

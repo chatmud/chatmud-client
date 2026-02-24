@@ -1,9 +1,7 @@
 import type { OutputLine, AnsiState } from '../types/output';
-import { DEFAULT_MAX_OUTPUT_LINES } from '../constants';
+import { DEFAULT_MAX_OUTPUT_LINES, STORAGE_KEYS } from '../constants';
 import { ttsEngine } from '../services/tts-engine';
 import { ttsState } from './tts.svelte';
-
-const STORAGE_KEY = 'chatmud-output';
 const SAVE_DEBOUNCE_MS = 500;
 
 const defaultAnsiState: AnsiState = {
@@ -137,7 +135,7 @@ class OutputState {
 
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEYS.OUTPUT);
       if (stored) {
         const parsed: OutputLine[] = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -161,7 +159,7 @@ class OutputState {
       this.saveTimer = null;
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.lines));
+      localStorage.setItem(STORAGE_KEYS.OUTPUT, JSON.stringify(this.lines));
     } catch {
       // Quota exceeded — ignore
     }
