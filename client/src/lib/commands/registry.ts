@@ -32,6 +32,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         return;
       }
       preferencesState.updateSound({ ambianceVolume: vol });
+      mediaState.ambianceVolume = vol;
       mediaService.updateVolumes();
       outputState.announce(`Ambience volume set to ${vol}`);
     },
@@ -139,6 +140,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         return;
       }
       preferencesState.updateSound({ masterVolume: vol });
+      mediaState.masterVolume = vol;
       mediaService.updateVolumes();
       outputState.announce(`Volume set to ${vol}`);
     },
