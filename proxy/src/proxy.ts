@@ -719,7 +719,20 @@ export class MudProxy {
 
     let upstream: UpstreamSocket;
 
+    const CONNECT_TIMEOUT_MS = 15000;
+    let connectionTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      connectionTimer = null;
+      if (!session.upstreamConnected) {
+        console.error(`[Proxy] Upstream connection timed out for session ${session.id}`);
+        upstream.destroy();
+      }
+    }, CONNECT_TIMEOUT_MS);
+
     const onConnected = () => {
+      if (connectionTimer !== null) {
+        clearTimeout(connectionTimer);
+        connectionTimer = null;
+      }
       console.log(`[Proxy] ${useTls ? "TLS" : "TCP"} upstream connected for session: ${session.id}`);
       session.upstreamConnected = true;
 
