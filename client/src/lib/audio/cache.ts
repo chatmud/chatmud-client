@@ -79,7 +79,9 @@ export class AudioCache {
       throw new Error(`Audio fetch failed: ${response.status} ${url}`);
     }
     const arrayBuffer = await response.arrayBuffer();
-    return context.decodeAudioData(arrayBuffer);
+    return context.decodeAudioData(arrayBuffer).catch((err: unknown) => {
+      throw new Error(`Audio decode failed for ${url}: ${err instanceof Error ? err.message : err}`);
+    });
   }
 
   private store(url: string, buffer: AudioBuffer): void {
