@@ -755,7 +755,7 @@ export class MudProxy {
       upstream = tls.connect({
         host,
         port,
-        rejectUnauthorized: false, // MOO certs are often self-signed
+        rejectUnauthorized: this.config.rejectUnauthorizedUpstream,
       }, onConnected);
     } else {
       upstream = net.connect({ host, port }, onConnected);

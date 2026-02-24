@@ -97,6 +97,11 @@ export interface ProxyConfig {
    * - Default: false
    */
   useProxyProtocol: boolean;
+  /**
+   * Whether to enforce TLS certificate validation for upstream connections.
+   * Defaults to false. Set UPSTREAM_REJECT_UNAUTHORIZED=true to enable.
+   */
+  rejectUnauthorizedUpstream: boolean;
 }
 
 /**

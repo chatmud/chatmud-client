@@ -24,6 +24,7 @@ const rawConfig = {
     10
   ),
   useProxyProtocol: process.env.USE_PROXY_PROTOCOL === "true",
+  rejectUnauthorizedUpstream: process.env.UPSTREAM_REJECT_UNAUTHORIZED === "true",
 };
 
 // Apply validation
@@ -41,6 +42,7 @@ const config: ProxyConfig = {
     "MAX_BUFFER_LINES"
   ),
   useProxyProtocol: rawConfig.useProxyProtocol,
+  rejectUnauthorizedUpstream: rawConfig.rejectUnauthorizedUpstream,
 };
 
 // Create Express app
