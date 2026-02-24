@@ -772,6 +772,7 @@ export class MudProxy {
 
     upstream.on("error", (error) => {
       console.error(`[Proxy] Upstream error for session ${session.id}:`, error);
+      this.cleanupSession(session.id);
     });
   }
 
