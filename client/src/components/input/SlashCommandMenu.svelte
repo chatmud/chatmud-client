@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition';
   import { slashCommandState } from '../../lib/state/slash-commands.svelte';
   import type { SlashCommand } from '../../lib/commands/registry';
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   interface Props {
     onselect: (cmd: SlashCommand) => void;
@@ -26,6 +29,7 @@
   id="slash-command-menu"
   role="listbox"
   aria-label="Slash commands"
+  transition:fly={{ y: 4, duration: reducedMotion ? 0 : 120 }}
 >
   {#each slashCommandState.suggestions as cmd, i}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -66,24 +70,6 @@
     overflow-y: auto;
     z-index: 100;
     margin-bottom: 4px;
-    animation: slide-up 120ms ease-out;
-  }
-
-  @keyframes slide-up {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .slash-menu {
-      animation: none;
-    }
   }
 
   .slash-item {
