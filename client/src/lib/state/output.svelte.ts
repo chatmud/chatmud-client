@@ -65,7 +65,7 @@ class OutputState {
       id: this.nextLineId++,
       spans: [
         {
-          text: `#${text}`,
+          text: `-- ${text} --`,
           style: { ...defaultAnsiState, dim: true, italic: true },
         },
       ],

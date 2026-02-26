@@ -99,7 +99,7 @@
 
   .system-line {
     color: var(--text-muted);
-    font-style: italic;
+    margin-block: 0.15em;
   }
 
   .focused-line {
