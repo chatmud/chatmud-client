@@ -156,6 +156,9 @@ class WebSocketService {
     if (this.ws) {
       this.ws.close(1000);
       this.ws = null;
+      // onclose guard (this.ws !== ws) will return early since this.ws is now null,
+      // so we must explicitly fire the status callback here.
+      this.onStatus?.('disconnected');
     }
   }
 

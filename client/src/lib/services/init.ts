@@ -168,6 +168,10 @@ export function initServices(): void {
           outputState.addSystemLine('disconnected');
           if (!wsService.lastCloseWasIntentional) {
             autoReconnecting = true;
+          } else {
+            // Intentional disconnect: clear session ID so handleNetworkResume
+            // doesn't auto-reconnect on the next tab switch or network event.
+            connectionState.sessionId = null;
           }
         }
         wasConnected = false;
@@ -185,8 +189,12 @@ export function initServices(): void {
 
   const handleNetworkResume = () => {
     if (!wsService.connected) {
-      resumingSession = !!connectionState.sessionId;
-      wsService.connect(connectionState.sessionId ?? undefined);
+      // Only auto-reconnect if there's a session to resume. If connectionState.sessionId
+      // is null the user intentionally disconnected (or never connected), so don't
+      // auto-reconnect on tab focus or network-online events.
+      if (!connectionState.sessionId) return;
+      resumingSession = true;
+      wsService.connect(connectionState.sessionId);
     } else {
       sendPing(); // ping timeout handles zombie detection
     }
