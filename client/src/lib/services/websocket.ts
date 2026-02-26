@@ -175,6 +175,14 @@ class WebSocketService {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
+  /**
+   * Whether the most recent close was intentional (i.e. disconnect() was called).
+   * False when the connection dropped unexpectedly and a reconnect will be attempted.
+   */
+  get lastCloseWasIntentional(): boolean {
+    return this.intentionalClose;
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------

@@ -29,6 +29,7 @@ import { channelHistoryState } from '../state/channel-history.svelte';
 let replayLineCount = 0;
 let resumingSession = false;
 let wasConnected = false;
+let autoReconnecting = false;
 let suppressionTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function initServices(): void {
@@ -134,8 +135,15 @@ export function initServices(): void {
     // onStatus: connection status changes
     (status) => {
       connectionState.status = status;
-      if (status === 'connected') {
-        outputState.addSystemLine('connected');
+      if (status === 'connecting') {
+        // If still marked as connected, this is a forceReconnect() (zombie recovery) —
+        // suppress the forthcoming #connected message.
+        if (wasConnected) autoReconnecting = true;
+      } else if (status === 'connected') {
+        if (!autoReconnecting) {
+          outputState.addSystemLine('connected');
+        }
+        autoReconnecting = false;
         if (resumingSession) {
           // Suppress TTS/announcements during buffer replay, but set a
           // safety timeout in case bufferReplayComplete never arrives
@@ -158,6 +166,9 @@ export function initServices(): void {
       } else if (status === 'disconnected') {
         if (wasConnected) {
           outputState.addSystemLine('disconnected');
+          if (!wsService.lastCloseWasIntentional) {
+            autoReconnecting = true;
+          }
         }
         wasConnected = false;
         stopPingTimer();
