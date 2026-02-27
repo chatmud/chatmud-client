@@ -6,12 +6,20 @@
  */
 
 import { mcpService } from '../mcp-service';
-import { CLIENT_NAME, CLIENT_VERSION } from '../../constants';
+import { CLIENT_NAME, CLIENT_VERSION, GIT_COMMIT } from '../../constants';
+import { onNegotiationComplete } from './negotiate';
+import { mcpState } from '../../state/mcp.svelte';
 
 export function registerClientPackage(): void {
   mcpService.registerHandler('dns-com-vmoo-client-disconnect', (_msg) => {
     // The server is about to disconnect us and is telling us not to auto-reconnect.
     // The actual disconnection handling is done by the connection manager.
+  });
+
+  onNegotiationComplete(() => {
+    if (mcpState.serverPackages.has('dns-com-vmoo-client')) {
+      sendClientInfo();
+    }
   });
 }
 
@@ -24,7 +32,7 @@ export function registerClientPackage(): void {
 export function sendClientInfo(): void {
   const kv = new Map<string, string>();
   kv.set('name', CLIENT_NAME);
-  kv.set('text-version', CLIENT_VERSION);
+  kv.set('text-version', `${CLIENT_VERSION}+${GIT_COMMIT}`);
   kv.set('internal-version', '1');
   kv.set('reg-id', '0');
   kv.set('flags', 'p');

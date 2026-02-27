@@ -11,6 +11,7 @@ import {
   TerminalType,
   CLIENT_NAME,
   CLIENT_VERSION,
+  GIT_COMMIT,
   GMCP_SUPPORTED_MODULES,
 } from '../constants';
 
@@ -126,7 +127,7 @@ export class TelnetNegotiator {
         // Send Core.Hello and Core.Supports.Set
         this.sendGmcp('Core.Hello', {
           client: CLIENT_NAME,
-          version: CLIENT_VERSION,
+          version: `${CLIENT_VERSION}+${GIT_COMMIT}`,
         });
         this.sendGmcp('Core.Supports.Set', GMCP_SUPPORTED_MODULES);
         break;
