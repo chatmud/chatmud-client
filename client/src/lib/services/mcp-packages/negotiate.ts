@@ -10,6 +10,13 @@ import { mcpService } from '../mcp-service';
 import { mcpState } from '../../state/mcp.svelte';
 import type { McpParsedMessage, McpPackageDefinition } from '../../types/mcp';
 
+const negotiationCompleteCallbacks: (() => void)[] = [];
+
+/** Register a callback to be invoked when MCP negotiation completes. */
+export function onNegotiationComplete(cb: () => void): void {
+  negotiationCompleteCallbacks.push(cb);
+}
+
 export function registerNegotiatePackage(): void {
   mcpService.registerHandler('mcp-negotiate-can', (msg: McpParsedMessage) => {
     const pkg: McpPackageDefinition = {
@@ -25,5 +32,6 @@ export function registerNegotiatePackage(): void {
 
   mcpService.registerHandler('mcp-negotiate-end', () => {
     mcpState.negotiationComplete = true;
+    for (const cb of negotiationCompleteCallbacks) cb();
   });
 }

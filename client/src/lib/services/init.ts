@@ -14,7 +14,7 @@ import { mcpService } from './mcp-service';
 import { connectionState } from '../state/connection.svelte';
 import { outputState } from '../state/output.svelte';
 import { registerNegotiatePackage } from './mcp-packages/negotiate';
-import { registerPingPackage, startPingTimer, stopPingTimer, sendPing } from './mcp-packages/ping';
+import { registerPingPackage, startPingTimer, stopPingTimer, sendPing, recordHeartbeat } from './mcp-packages/ping';
 import { registerStatusPackage } from './mcp-packages/status';
 import { registerServerInfoPackage } from './mcp-packages/serverinfo';
 import { registerDisplayUrlPackage } from './mcp-packages/displayurl';
@@ -25,6 +25,7 @@ import { ttsEngine } from './tts-engine';
 import { mediaService } from './media-service';
 import { ttsState } from '../state/tts.svelte';
 import { channelHistoryState } from '../state/channel-history.svelte';
+import { outputReviewState } from '../state/output-review.svelte';
 
 let replayLineCount = 0;
 let resumingSession = false;
@@ -115,6 +116,10 @@ export function initServices(): void {
     // onProxy: proxy control messages
     (msg) => {
       connectionState.handleProxyMessage(msg);
+      if (msg.type === 'heartbeat') {
+        recordHeartbeat();
+        return;
+      }
       if (msg.type === 'bufferReplayComplete') {
         if (suppressionTimer !== null) {
           clearTimeout(suppressionTimer);
@@ -196,7 +201,7 @@ export function initServices(): void {
       resumingSession = true;
       wsService.connect(connectionState.sessionId);
     } else {
-      sendPing(); // ping timeout handles zombie detection
+      sendPing(true); // zombie check: force reconnect if no reply
     }
   };
 

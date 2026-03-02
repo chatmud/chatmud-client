@@ -486,6 +486,9 @@ export function parseUpstreamUrl(url: string): { host: string; port: number; use
   return { host, port, useTls };
 }
 
+// Must match PING_INTERVAL in client/src/lib/services/mcp-packages/ping.ts.
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
 /**
  * WebSocket proxy with connection persistence
  */
@@ -525,16 +528,17 @@ export class MudProxy {
    * Start periodic ping to keep connections alive
    */
   private startPingInterval(): void {
-    // Ping every 30 seconds
     this.pingInterval = setInterval(() => {
       for (const session of this.sessions.values()) {
-        // Ping client WebSocket if connected
         if (session.client && session.client.readyState === WebSocket.OPEN) {
+          // WS-level ping keeps nginx and other infrastructure from timing out.
           session.client.ping();
+          // App-level heartbeat lets the client detect zombie connections in JS.
+          this.sendProxyMessage(session.client, { type: "heartbeat" });
         }
         // No ping needed for raw TCP upstream - TCP keepalive handles it
       }
-    }, 30000);
+    }, HEARTBEAT_INTERVAL_MS);
   }
 
   /**

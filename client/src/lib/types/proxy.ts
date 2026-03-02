@@ -6,7 +6,7 @@ export interface SessionConfig {
 
 /** Message from proxy to client (prefixed with 0x00) */
 export interface ProxyMessage {
-  type: 'session' | 'error' | 'reconnected' | 'configUpdated' | 'bufferReplayComplete';
+  type: 'session' | 'error' | 'reconnected' | 'configUpdated' | 'bufferReplayComplete' | 'heartbeat';
   sessionId?: string;
   bufferedCount?: number;
   count?: number;

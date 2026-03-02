@@ -32,6 +32,7 @@ class ConnectionState {
         localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
         break;
       case 'bufferReplayComplete':
+      case 'heartbeat':
         break;
     }
   }
