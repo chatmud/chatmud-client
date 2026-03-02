@@ -10,6 +10,11 @@
   let politeLog: HTMLElement | null = null;
   let enabled = $derived(preferencesState.accessibility.ariaLiveRegions);
 
+  // Queue so each message is appended in a separate event-loop tick,
+  // preventing screen readers from concatenating simultaneous additions.
+  let politeQueue: string[] = [];
+  let politeTimer: ReturnType<typeof setTimeout> | null = null;
+
   onMount(() => {
     if (!containerEl) return;
 
@@ -23,6 +28,7 @@
 
   onDestroy(() => {
     outputState.registerAssertiveCallback(null);
+    if (politeTimer !== null) clearTimeout(politeTimer);
     assertiveLog = null;
     politeLog = null;
   });
@@ -49,6 +55,15 @@
     appendMessage(assertiveLog, text);
   }
 
+  function drainPoliteQueue(): void {
+    if (politeQueue.length === 0) {
+      politeTimer = null;
+      return;
+    }
+    appendMessage(politeLog, politeQueue.shift()!);
+    politeTimer = setTimeout(drainPoliteQueue, 0);
+  }
+
   // Polite announcements for MUD output
   $effect(() => {
     const pending = outputState.pendingAnnouncementText;
@@ -56,9 +71,8 @@
 
     const texts = untrack(() => outputState.consumeAnnouncements());
     if (!enabled) return;
-    for (const text of texts) {
-      appendMessage(politeLog, text);
-    }
+    politeQueue.push(...texts);
+    if (politeTimer === null) drainPoliteQueue();
   });
 </script>
 

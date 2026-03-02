@@ -202,7 +202,7 @@ export function initServices(): void {
       resumingSession = true;
       wsService.connect(connectionState.sessionId);
     } else {
-      sendPing(true); // zombie check: force reconnect if no reply
+      sendPing(); // measure latency; zombie detection uses heartbeat interval
     }
   };
 

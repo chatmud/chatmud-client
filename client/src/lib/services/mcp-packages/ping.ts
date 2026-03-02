@@ -7,10 +7,9 @@
  *
  * Periodically sends client-initiated pings for latency measurement.
  *
- * Zombie detection uses the proxy heartbeat (sent every 30s) rather than
- * replies to client-initiated MCP pings. This works regardless of whether
- * the MUD server supports bidirectional pings, and catches cases like
- * cellular IP handoffs where the WebSocket goes dead while the tab is active.
+ * Zombie detection uses the proxy heartbeat rather than replies to
+ * client-initiated MCP pings, so it works even when the MUD doesn't
+ * support bidirectional pings.
  */
 
 import { mcpService } from '../mcp-service';
@@ -23,7 +22,6 @@ const PING_INTERVAL = 30_000; // must match HEARTBEAT_INTERVAL_MS in proxy/src/p
 const PING_TIMEOUT = 15_000;
 
 let pingTimer: ReturnType<typeof setInterval> | null = null;
-let pingTimeoutTimer: ReturnType<typeof setTimeout> | null = null;
 let lastHeartbeatAt: number | null = null;
 
 export function registerPingPackage(): void {
@@ -33,11 +31,6 @@ export function registerPingPackage(): void {
   });
 
   mcpService.registerHandler('dns-com-awns-ping-reply', () => {
-    // Pong received — cancel any outstanding zombie-detection timeout
-    if (pingTimeoutTimer !== null) {
-      clearTimeout(pingTimeoutTimer);
-      pingTimeoutTimer = null;
-    }
     // Response to a ping we initiated - calculate latency
     if (statusState.lastPingSent != null) {
       const raw = performance.now() - statusState.lastPingSent;
@@ -58,23 +51,10 @@ export function recordHeartbeat(): void {
 /**
  * Send a ping to the server. Records the send time so we can calculate
  * latency when the reply arrives.
- *
- * @param zombieCheck - If true, arms a timeout that calls forceReconnect if
- *   no reply arrives within PING_TIMEOUT. Use this for on-demand liveness
- *   checks (tab focus, network resume) — not for routine interval pings.
  */
-export function sendPing(zombieCheck = false): void {
+export function sendPing(): void {
   if (!connectionState.isConnected) return;
   if (!mcpState.authKey) return; // MCP handshake not yet complete; ping would be dropped
-  if (zombieCheck) {
-    if (pingTimeoutTimer !== null) {
-      clearTimeout(pingTimeoutTimer);
-    }
-    pingTimeoutTimer = setTimeout(() => {
-      stopPingTimer();
-      wsService.forceReconnect();
-    }, PING_TIMEOUT);
-  }
   statusState.lastPingSent = performance.now();
   mcpService.sendMessage('dns-com-awns-ping', new Map());
 }
@@ -104,10 +84,6 @@ export function stopPingTimer(): void {
   if (pingTimer !== null) {
     clearInterval(pingTimer);
     pingTimer = null;
-  }
-  if (pingTimeoutTimer !== null) {
-    clearTimeout(pingTimeoutTimer);
-    pingTimeoutTimer = null;
   }
   lastHeartbeatAt = null;
 }
