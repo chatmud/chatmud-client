@@ -92,7 +92,7 @@ class OutputReviewState {
     const text = this.getLineText(this.cline);
     ttsEngine.cancel();
     if (this.cline === oline) {
-      outputState.announce('boundary');
+      outputState.announce('top');
     }
     outputState.announce(text);
   }
@@ -104,7 +104,7 @@ class OutputReviewState {
     const text = this.getLineText(this.cline);
     ttsEngine.cancel();
     if (this.cline === oline) {
-      outputState.announce('boundary');
+      outputState.announce('bottom');
     }
     outputState.announce(text);
   }
@@ -232,8 +232,10 @@ class OutputReviewState {
 
   setupKeyboardHandler(): () => void {
     const handler = (e: KeyboardEvent) => {
-      // Ctrl+Shift (no Alt, no Meta): output line navigation
-      if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey) {
+      const mod = e.ctrlKey || e.metaKey;
+
+      // Ctrl/Cmd+Shift (no Alt): output line navigation
+      if (mod && e.shiftKey && !e.altKey) {
         switch (e.code) {
           case 'KeyU':
             e.preventDefault();
@@ -270,8 +272,8 @@ class OutputReviewState {
         }
       }
 
-      // Ctrl+Shift+Alt (no Meta): select-with-spaces
-      if (e.ctrlKey && e.shiftKey && e.altKey && !e.metaKey) {
+      // Ctrl/Cmd+Shift+Alt: select-with-spaces
+      if (mod && e.shiftKey && e.altKey) {
         switch (e.code) {
           case 'Space':
             e.preventDefault();
@@ -280,8 +282,8 @@ class OutputReviewState {
         }
       }
 
-      // Ctrl+Alt+O (no Shift, no Meta): toggle ARIA live regions
-      if (e.ctrlKey && e.altKey && !e.shiftKey && !e.metaKey && e.code === 'KeyO') {
+      // Ctrl/Cmd+Alt+O (no Shift): toggle ARIA live regions
+      if (mod && e.altKey && !e.shiftKey && e.code === 'KeyO') {
         e.preventDefault();
         const next = !preferencesState.accessibility.ariaLiveRegions;
         preferencesState.updateAccessibility({ ariaLiveRegions: next });
@@ -289,8 +291,8 @@ class OutputReviewState {
         return;
       }
 
-      // Ctrl+digit (no Shift, no Alt, no Meta): LineGet
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+      // Ctrl/Cmd+digit (no Shift, no Alt): LineGet
+      if (mod && !e.shiftKey && !e.altKey) {
         const digit = getDigitFromEvent(e);
         if (digit !== null) {
           e.preventDefault();
