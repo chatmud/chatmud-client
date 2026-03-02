@@ -36,6 +36,7 @@ let suppressionTimer: ReturnType<typeof setTimeout> | null = null;
 export function initServices(): void {
   ttsEngine.init();
   channelHistoryState.setupKeyboardHandler();
+  outputReviewState.setupKeyboardHandler();
   const telnetParser = new TelnetParser();
   const outputProcessor = new OutputProcessor();
   const telnetNegotiator = new TelnetNegotiator(

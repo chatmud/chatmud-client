@@ -55,6 +55,24 @@
       ],
     },
     {
+      title: 'Output Review',
+      shortcuts: [
+        { keys: 'Ctrl+Shift+U', description: 'Previous line (skip blanks)' },
+        { keys: 'Ctrl+Shift+O', description: 'Next line (skip blanks)' },
+        { keys: 'Ctrl+Shift+I', description: 'Read current line' },
+        { keys: 'Ctrl+Shift+Y', description: 'Jump to top' },
+        { keys: 'Ctrl+Shift+N', description: 'Jump to bottom' },
+        { keys: 'Ctrl+Shift+H', description: 'Report line position' },
+        { keys: 'Ctrl+1-9 / Ctrl+0', description: 'Read line N from end (1 = last)' },
+        { keys: 'Ctrl+1-9 (double)', description: 'Copy line N to clipboard' },
+        { keys: 'Ctrl+1-9 (triple)', description: 'Paste line N into input' },
+        { keys: 'Ctrl+Shift+Space', description: 'Start / end selection (line breaks)' },
+        { keys: 'Ctrl+Shift+Alt+Space', description: 'Start / end selection (spaces)' },
+        { keys: 'Ctrl+Shift+C', description: 'Clear output buffer' },
+        { keys: 'Ctrl+Alt+O', description: 'Toggle ARIA live regions' },
+      ],
+    },
+    {
       title: 'Editor',
       shortcuts: [
         { keys: 'Ctrl+S / Cmd+S', description: 'Send changes' },
