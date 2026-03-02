@@ -43,7 +43,7 @@ function getDefaults(): PreferencesSchema {
     display: {
       autoLinkUrls: true,
       timestamps: false,
-      maxOutputLines: 1000,
+      maxOutputLines: 5000,
       confirmDisplayUrl: true,
       debugGmcp: false,
     },

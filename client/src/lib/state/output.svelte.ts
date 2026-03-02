@@ -2,6 +2,7 @@ import type { OutputLine, AnsiState } from '../types/output';
 import { DEFAULT_MAX_OUTPUT_LINES, STORAGE_KEYS } from '../constants';
 import { ttsEngine } from '../services/tts-engine';
 import { ttsState } from './tts.svelte';
+import { preferencesState } from './preferences.svelte';
 const SAVE_DEBOUNCE_MS = 500;
 
 const defaultAnsiState: AnsiState = {
@@ -19,7 +20,9 @@ const defaultAnsiState: AnsiState = {
 
 class OutputState {
   lines = $state<OutputLine[]>([]);
-  maxLines = $state(DEFAULT_MAX_OUTPUT_LINES);
+  get maxLines(): number {
+    return preferencesState.display.maxOutputLines;
+  }
   scrollLocked = $state(true); // true = auto-scroll to bottom
   pendingAnnouncementText = $state<string[]>([]);
 

@@ -1,19 +1,17 @@
 <script lang="ts">
   import { uiState } from '../../lib/state/ui.svelte';
   import Modal from '../common/Modal.svelte';
-  import FontSettings from './FontSettings.svelte';
-  import ColorSettings from './ColorSettings.svelte';
+  import OutputSettings from './OutputSettings.svelte';
   import ProxySettings from './ProxySettings.svelte';
   import AccessibilitySettings from './AccessibilitySettings.svelte';
   import AboutInfo from './AboutInfo.svelte';
   import DebugSettings from './DebugSettings.svelte';
   import ShortcutKeys from './ShortcutKeys.svelte';
 
-  type SectionId = 'font' | 'colors' | 'proxy' | 'accessibility' | 'shortcuts' | 'debug' | 'about';
+  type SectionId = 'output' | 'proxy' | 'accessibility' | 'shortcuts' | 'debug' | 'about';
 
   const sections: { id: SectionId; label: string }[] = [
-    { id: 'font', label: 'Font' },
-    { id: 'colors', label: 'Colors' },
+    { id: 'output', label: 'Output' },
     { id: 'proxy', label: 'Proxy' },
     { id: 'accessibility', label: 'Accessibility' },
     { id: 'shortcuts', label: 'Shortcuts' },
@@ -21,7 +19,7 @@
     { id: 'about', label: 'About' },
   ];
 
-  let activeSection = $state<SectionId>('font');
+  let activeSection = $state<SectionId>('output');
   let focusedIndex = $state(0);
   let isMobile = $state(window.matchMedia('(max-width: 600px)').matches);
 
@@ -117,10 +115,8 @@
         tabindex="0"
         hidden={activeSection !== section.id}
       >
-        {#if section.id === 'font'}
-          <FontSettings />
-        {:else if section.id === 'colors'}
-          <ColorSettings />
+        {#if section.id === 'output'}
+          <OutputSettings />
         {:else if section.id === 'proxy'}
           <ProxySettings />
         {:else if section.id === 'accessibility'}
